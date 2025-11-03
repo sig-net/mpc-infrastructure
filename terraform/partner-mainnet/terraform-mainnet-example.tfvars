@@ -21,7 +21,7 @@ node_configs = [
     eth_execution_rpc_url_secret_id = "multichain-eth-execution-rpc-url-mainnet"
     eth_contract_address = "D39b0aBc0acab7d48aC6DFC9612543f035233b68"
     sol_account_sk_secret_id = "multichain-sol-account-sk-mainnet-0"
-    sol_program_address = "multichain-sol-program-address-mainnet"
+    sol_program_address = "SigMcRMjKfnC7RDG5q4yUMZM1s5KJ9oYTPP4NmJRDRw"
     sol_rpc_ws_url      = "multichain-sol-rpc-ws-url-mainnet"
     sol_rpc_http_url    = "multichain-sol-rpc-http-url-mainnet"
   },
