@@ -12,7 +12,7 @@ terraform {
   }
 }
 
-# These data blocks grab the values from your GCP secret manager, please adjust secret names as desired
+# These data blocks grab the values from your GCP secret manager
 data "google_secret_manager_secret_version" "account_sk_secret_id" {
   count   = length(var.node_configs)
   secret  = var.node_configs[0].account_sk_secret_id
@@ -70,14 +70,14 @@ data "google_secret_manager_secret_version" "sol_account_sk_secret_id" {
   project = var.project_id
 }
 
-data "google_secret_manager_secret_version" "sol_rpc_ws_url" {
+data "google_secret_manager_secret_version" "sol_rpc_ws_url_secret_id" {
   count   = length(var.node_configs)
-  secret  = var.node_configs[0].sol_rpc_ws_url
+  secret  = var.node_configs[0].sol_rpc_ws_url_secret_id
   project = var.project_id
 }
 
-data "google_secret_manager_secret_version" "sol_rpc_http_url" {
+data "google_secret_manager_secret_version" "sol_rpc_http_url_secret_id" {
   count   = length(var.node_configs)
-  secret  = var.node_configs[0].sol_rpc_http_url
+  secret  = var.node_configs[0].sol_rpc_http_url_secret_id
   project = var.project_id
 }
