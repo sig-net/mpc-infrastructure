@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multichain-mainnet-0
+  labels:
+    app: multichain-0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multichain-0
+  template:
+    metadata:
+      labels:
+        app: multichain-0
+    spec:
+      serviceAccountName: k8s-sa
+      containers:
+      - name: multichain-0
+        image: europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet:fb9e1c484e483fe946213391a7343c61ff1d4712
+        imagePullPolicy: "Always"
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 3000Mi
+        ports:
+        - containerPort: 3000
+        env:
+        - name: "MPC_NEAR_RPC"
+          value: "https://rpc.mainnet.fastnear.com"
+        - name: "MPC_CONTRACT_ID"
+          value: "v1.sig-net.near"
+        - name: "MPC_INDEXER_S3_BUCKET"
+          value: "near-lake-data-mainnet"
+        - name: "AWS_DEFAULT_REGION"
+          value: "eu-central-1"
+        - name: "MPC_GCP_PROJECT_ID"
+          value: "near-cs-mainnet"
+        - name: "MPC_WEB_PORT"
+          value: "3000"
+        - name: "RUST_LOG"
+          value: "mpc_node=debug"
+        - name: "MPC_INDEXER_S3_REGION"
+          value: "eu-central-1"
+        - name: "MPC_NODE_ID"
+          value: "0"
+        - name: MPC_ACCOUNT_ID
+          value: node.sig-net.near
+        - name: "MPC_CIPHER_PK"
+          value: "756111207e38f2518bfdcbda746eafa0ec3a340baeecc02084a75f2240f48651"
+        - name: "MPC_ACCOUNT_SK"
+          value: gcp:secretmanager:projects/near-cs-mainnet/secrets/multichain-partner-account-sk-mainnet-0
+        - name: "MPC_CIPHER_SK"
+          value: gcp:secretmanager:projects/near-cs-mainnet/secrets/multichain-partner-cipher-sk-mainnet-0
+        - name: "MPC_SIGN_SK"
+          value: gcp:secretmanager:projects/near-cs-mainnet/secrets/multichain-partner-sign-sk-mainnet-0
+        - name: "AWS_ACCESS_KEY_ID"
+          value: gcp:secretmanager:projects/near-cs-mainnet/secrets/multichain-indexer-aws-access-key
+        - name: "AWS_SECRET_ACCESS_KEY"
+          value: gcp:secretmanager:projects/near-cs-mainnet/secrets/multichain-indexer-aws-secret-key
+        - name: "MPC_LOCAL_ADDRESS"
+          value: "https://mainnet.sig.network"
+        - name: "MPC_SK_SHARE_SECRET_ID"
+          value: multichain-partner-sk-share-mainnet-0
+        - name: "MPC_ENV"
+          value: "mainnet"
+        - name: "MPC_REDIS_URL"
+          value: "redis://redis.default.svc.cluster.local"
+        - name: "MPC_ETH_ACCOUNT_SK"
+          value: gcp:secretmanager:projects/near-cs-mainnet/secrets/multichain-eth-account-sk-mainnet-0
+        - name: "MPC_ETH_CONTRACT_ADDRESS"
+          value: "f8bdC0612361a1E49a8E01423d4C0cFc5dF4791A"
+        - name: "MPC_ETH_RPC_WS_URL"
+          value: gcp:secretmanager:projects/near-cs-mainnet/secrets/multichain-eth-rpc-ws-url-0
+        - name: "MPC_ETH_RPC_HTTP_URL"
+          value: gcp:secretmanager:projects/near-cs-mainnet/secrets/multichain-eth-rpc-http-url-0
+        - name: "MPC_SOL_PROGRAM_ADDRESS"
+          value: "SigMcRMjKfnC7RDG5q4yUMZM1s5KJ9oYTPP4NmJRDRw"

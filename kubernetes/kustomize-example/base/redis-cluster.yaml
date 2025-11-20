@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-master
+  namespace: chain-sig
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      role: master
+  template:
+    metadata:
+      labels:
+        role: master
+        app: redis
+    spec:
+      containers:
+      - name: redis-master
+        image: redis:7.4.2
+        volumeMounts:
+        - mountPath: /data
+          name: redis-storage
+        ports:
+        - containerPort: 6379
+        - containerPort: 16379
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-slave
+  namespace: chain-sig
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      role: slave
+  template:
+    metadata:
+      labels:
+        role: slave
+    spec:
+      containers:
+      - name: redis-slave
+        image: redis:7.4.2
+        ports:
+        - containerPort: 6379
+        - containerPort: 16379
+        command: ["redis-server", "--replicaof", "redis.default.svc.cluster.local", "6379", "--slave-read-only", "no"]

@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: chain-signatures
+  namespace: chain-sig
+resources:
+  - ../../base
+  - redis-cli.yaml
+  - service-mpc.yaml
+  - service-account.yaml
+  - multichain-0.yaml
+  - ingress.yaml
+  - managed-cert.yaml
+
+images:
+  - name: europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet
+    newTag: fb9e1c484e483fe946213391a7343c61ff1d4712
+  - name: redis
+    newTag: 7.4.2 #must be pinned to this version
