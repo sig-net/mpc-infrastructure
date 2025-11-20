@@ -19,7 +19,7 @@ crash.*.log
 !backend-config-*.tfvars
 !terraform-testnet-example.tfvars
 !backend.tfvars
-!terraform-mainnet-example.tfvars
+!terraform-mainnet-example.auto.tfvars
 secrets.txt
 
 # Ignore override files as they are usually used to override resources locally and so

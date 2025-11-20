@@ -32,6 +32,10 @@ module "gce-container" {
         value = "${count.index}"
       },
       {
+        name  = "MPC_GCP_PROJECT_ID"
+        value = var.project_id
+      },
+      {
         name  = "MPC_ACCOUNT_ID"
         value = var.node_configs["${count.index}"].account
       },
@@ -93,11 +97,11 @@ module "gce-container" {
       },
       {
         name  = "MPC_SOL_RPC_HTTP_URL"
-        value = data.google_secret_manager_secret_version.sol_rpc_http_url[count.index].secret_data
+        value = data.google_secret_manager_secret_version.sol_rpc_http_url_secret_id[count.index].secret_data
       },
       {
         name  = "MPC_SOL_RPC_WS_URL"
-        value = data.google_secret_manager_secret_version.sol_rpc_ws_url[count.index].secret_data
+        value = data.google_secret_manager_secret_version.sol_rpc_ws_url_secret_id[count.index].secret_data
       },
       {
         name  = "MPC_SOL_PROGRAM_ADDRESS"
@@ -293,5 +297,5 @@ resource "google_compute_firewall" "app_port" {
     ports    = ["80", "3000"]
   }
 
-  depends_on = [ module.vpc ]
+  depends_on = [module.vpc]
 }
