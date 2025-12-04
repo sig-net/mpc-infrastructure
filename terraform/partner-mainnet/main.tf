@@ -53,11 +53,11 @@ module "gce-container" {
       },
       {
         name  = "AWS_ACCESS_KEY_ID"
-        value = data.google_secret_manager_secret_version.aws_access_key_secret_id.secret_data
+        value = "1"
       },
       {
         name  = "AWS_SECRET_ACCESS_KEY"
-        value = data.google_secret_manager_secret_version.aws_secret_key_secret_id.secret_data
+        value = "1"
       },
       {
         name  = "MPC_LOCAL_ADDRESS"

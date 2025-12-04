@@ -21,7 +21,7 @@ crash.*.log
 !backend.tfvars
 !terraform-mainnet-example.auto.tfvars
 secrets.txt
-
+target
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in
 override.tf
