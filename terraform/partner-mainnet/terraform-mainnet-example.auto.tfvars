@@ -2,7 +2,7 @@ env        = "mainnet"
 project_id = "<your-project-id>"
 network    = "default"
 subnetwork = "default"
-image      = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet:<git-sha>"
+image      = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet:02cd25e4493b064073988eae95853eb188ba2cc3"
 region     = "europe-west1"
 zone       = "europe-west1-b" # Feel free to choose other zones in the region for HA purposes between nodes
 # These will be specific to your node
