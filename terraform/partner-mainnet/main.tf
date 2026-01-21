@@ -299,3 +299,10 @@ resource "google_compute_firewall" "app_port" {
 
   depends_on = [module.vpc]
 }
+
+resource "google_logging_project_sink" "to_sig_central" {
+  name        = "sig-central-logging"
+  destination = "logging.googleapis.com/projects/near-cs-mainnet/locations/global/buckets/_Default"
+
+  unique_writer_identity = true
+}
