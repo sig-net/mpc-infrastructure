@@ -9,115 +9,7 @@ resource "google_compute_project_metadata_item" "project_logging" {
   key   = "google-logging-enabled"
   value = "true"
 }
-module "gce-container" {
-  count   = length(var.node_configs)
-  source  = "terraform-google-modules/container-vm/google"
-  version = "~> 3.0"
 
-  container = {
-    image = var.image
-
-    port = "3000"
-    volumeMounts = [
-      {
-        mountPath = "/data"
-        name      = "host-path"
-        readOnly  = false
-      }
-    ]
-
-    env = concat(var.static_env, [
-      {
-        name  = "MPC_NODE_ID"
-        value = "${count.index}"
-      },
-      {
-        name  = "MPC_GCP_PROJECT_ID"
-        value = var.project_id
-      },
-      {
-        name  = "MPC_ACCOUNT_ID"
-        value = var.node_configs["${count.index}"].account
-      },
-      {
-        name  = "MPC_ACCOUNT_SK"
-        value = data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
-      },
-      {
-        name  = "MPC_CIPHER_SK"
-        value = data.google_secret_manager_secret_version.cipher_sk_secret_id[count.index].secret_data
-      },
-      {
-        name  = "MPC_SIGN_SK"
-        value = data.google_secret_manager_secret_version.sign_sk_secret_id[count.index] != null ? data.google_secret_manager_secret_version.sign_sk_secret_id[count.index].secret_data : data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
-      },
-      {
-        name  = "AWS_ACCESS_KEY_ID"
-        value = "1"
-      },
-      {
-        name  = "AWS_SECRET_ACCESS_KEY"
-        value = "1"
-      },
-      {
-        name  = "MPC_LOCAL_ADDRESS"
-        value = "https://${var.node_configs[count.index].domain}"
-      },
-      {
-        name  = "MPC_SK_SHARE_SECRET_ID"
-        value = var.node_configs["${count.index}"].sk_share_secret_id
-      },
-      {
-        name  = "MPC_ENV",
-        value = var.env
-      },
-      {
-        name  = "MPC_REDIS_URL",
-        value = var.redis_url
-      },
-      {
-        name  = "MPC_ETH_ACCOUNT_SK"
-        value = data.google_secret_manager_secret_version.eth_account_sk_secret_id[count.index].secret_data
-      },
-      {
-        name  = "MPC_ETH_CONSENSUS_RPC_HTTP_URL"
-        value = data.google_secret_manager_secret_version.eth_consensus_rpc_url_secret_id[count.index].secret_data
-      },
-      {
-        name  = "MPC_ETH_EXECUTION_RPC_HTTP_URL"
-        value = data.google_secret_manager_secret_version.eth_execution_rpc_url_secret_id[count.index].secret_data
-      },
-      {
-        name  = "MPC_ETH_CONTRACT_ADDRESS"
-        value = var.node_configs["${count.index}"].eth_contract_address
-      },
-      {
-        name  = "MPC_SOL_ACCOUNT_SK"
-        value = data.google_secret_manager_secret_version.sol_account_sk_secret_id[count.index].secret_data
-      },
-      {
-        name  = "MPC_SOL_RPC_HTTP_URL"
-        value = data.google_secret_manager_secret_version.sol_rpc_http_url_secret_id[count.index].secret_data
-      },
-      {
-        name  = "MPC_SOL_RPC_WS_URL"
-        value = data.google_secret_manager_secret_version.sol_rpc_ws_url_secret_id[count.index].secret_data
-      },
-      {
-        name  = "MPC_SOL_PROGRAM_ADDRESS"
-        value = var.node_configs["${count.index}"].sol_program_address
-      }
-    ])
-  }
-  volumes = [
-    {
-      name = "host-path"
-      hostPath = {
-        path = "/var/redis"
-      }
-    }
-  ]
-}
 
 resource "google_service_account" "service_account" {
   account_id   = "multichain-partner-${var.env}"
@@ -157,27 +49,56 @@ resource "google_compute_managed_ssl_certificate" "mainnet_ssl" {
 }
 
 module "ig_template" {
-  count      = length(var.node_configs)
-  source     = "../modules/mig_template"
+  count  = length(var.node_configs)
+  source = "../modules/mig_template"
+
   network    = var.network
   subnetwork = var.subnetwork
   region     = var.region
+
   service_account = {
-    email  = google_service_account.service_account.email,
+    email  = google_service_account.service_account.email
     scopes = ["cloud-platform"]
   }
+
   name_prefix  = "multichain-partner-mainnet-${count.index}"
   machine_type = "n2d-standard-4"
 
+  startup_script = templatefile("${path.module}/scripts/startup.sh.tftpl", {
+    image                        = var.image
+    image_port                   = var.image_port
+    static_env                   = var.static_env
+    node_id                      = count.index
+    project_id                   = var.project_id
+    account_id                   = var.node_configs[count.index].account
+    account_sk                   = data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
+    cipher_sk                    = data.google_secret_manager_secret_version.cipher_sk_secret_id[count.index].secret_data
+    sign_sk                      = data.google_secret_manager_secret_version.sign_sk_secret_id[count.index] != null ? data.google_secret_manager_secret_version.sign_sk_secret_id[count.index].secret_data : data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
+    aws_access_key_id            = "1"
+    aws_secret_access_key        = "1"
+    local_address                = "https://${var.node_configs[count.index].domain}"
+    sk_share_secret_id           = var.node_configs[count.index].sk_share_secret_id
+    env_name                     = var.env
+    redis_url                    = var.redis_url
+    eth_account_sk               = data.google_secret_manager_secret_version.eth_account_sk_secret_id[count.index].secret_data
+    eth_consensus_rpc_http_url   = data.google_secret_manager_secret_version.eth_consensus_rpc_url_secret_id[count.index].secret_data
+    eth_execution_rpc_http_url   = data.google_secret_manager_secret_version.eth_execution_rpc_url_secret_id[count.index].secret_data
+    eth_contract_address         = var.node_configs[count.index].eth_contract_address
+    sol_account_sk               = data.google_secret_manager_secret_version.sol_account_sk_secret_id[count.index].secret_data
+    sol_rpc_http_url             = data.google_secret_manager_secret_version.sol_rpc_http_url_secret_id[count.index].secret_data
+    sol_rpc_ws_url               = data.google_secret_manager_secret_version.sol_rpc_ws_url_secret_id[count.index].secret_data
+    sol_program_address          = var.node_configs[count.index].sol_program_address
+  })
+
   source_image = var.source_image
-  metadata     = merge(var.additional_metadata, { "gce-container-declaration" = module.gce-container["${count.index}"].metadata_value })
+  metadata     = var.additional_metadata
+
   tags = [
     "multichain",
     "allow-ssh"
   ]
-  labels = {
-    "container-vm" = module.gce-container[count.index].vm_container_label
-  }
+
+  labels = {}
 
   depends_on = [google_compute_global_address.external_ips]
 }
