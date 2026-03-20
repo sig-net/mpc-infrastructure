@@ -40,7 +40,7 @@ Before you begin, make sure you have:
 Relevant paths in this repository:
 
 ```text
-scripts/generate_keys/
+key_scripts/generate_keys/
 terraform/partner-mainnet/
 terraform/partner-mainnet/scripts/
 terraform/partner-mainnet/resources.tf
@@ -180,7 +180,7 @@ git pull
 ### 3.3 Run the key generator
 
 ```bash
-cd scripts/generate_keys
+cd key_scripts/generate_keys
 cargo run
 ```
 
