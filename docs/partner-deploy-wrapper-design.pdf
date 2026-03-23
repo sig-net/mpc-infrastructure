@@ -1,0 +1,1032 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 10 /Kids [5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R 23 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1918 >>
+stream
+BT
+/F1 11 Tf
+54 738 Td
+15 TL
+(PARTNER MAINNET DEPLOYMENT WRAPPER DESIGN) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Date: 2026-03-23) Tj
+T*
+(Repo: `sig-net/mpc-infrastructure`) Tj
+T*
+(Scope: design proposal for a simpler GCP-only partner deployment flow for mainnet nodes) Tj
+T*
+() Tj
+T*
+(EXECUTIVE SUMMARY) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(The current partner deployment flow works, but it asks partner operators to understand too) Tj
+T*
+(much infrastructure detail:) Tj
+T*
+() Tj
+T*
+(? Terraform state setup) Tj
+T*
+(? GCP project prep) Tj
+T*
+(? Secret naming and Secret Manager population) Tj
+T*
+(? per-node tfvars layout) Tj
+T*
+(? VM and load balancer details) Tj
+T*
+(? rollout and verification steps) Tj
+T*
+() Tj
+T*
+(That is survivable for internal operators, but it creates friction for partners who are) Tj
+T*
+(already prone to getting lost in large or highly technical setup flows.) Tj
+T*
+() Tj
+T*
+(The recommended direction is **not** to replace the existing Terraform immediately. Instead,) Tj
+T*
+(build a thin, opinionated **CLI wrapper** around the current `terraform/partner-mainnet`) Tj
+T*
+(deployment so partners interact with a guided workflow while the chain signatures team keeps) Tj
+T*
+(control of the underlying deployment details.) Tj
+T*
+() Tj
+T*
+(GOALS) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(1. Keep **GCP as the only supported provider**.) Tj
+T*
+(2. Reduce partner cognitive load.) Tj
+T*
+(3. Preserve the ability for the chain signatures team to evolve deployment internals.) Tj
+T*
+(4. Keep the partner-facing interface stable even if Terraform internals change.) Tj
+T*
+(5. Catch mistakes early with strong preflight validation.) Tj
+T*
+(6. Avoid forcing partners to learn Kubernetes.) Tj
+T*
+() Tj
+T*
+(NON-GOALS) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(? Multi-cloud support.) Tj
+T*
+(? A full replacement of Terraform in phase 1.) Tj
+T*
+(? A Kubernetes-based partner operating model.) Tj
+T*
+(? Arbitrary infrastructure customization by partners.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 1452 >>
+stream
+BT
+/F1 11 Tf
+54 738 Td
+15 TL
+() Tj
+T*
+(CURRENT PAIN POINTS) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(1. Too many infrastructure concepts are exposed) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Partners currently have to reason about:) Tj
+T*
+() Tj
+T*
+(? project and API setup) Tj
+T*
+(? Terraform backend bucket creation) Tj
+T*
+(? `tfvars` editing) Tj
+T*
+(? many secret IDs) Tj
+T*
+(? DNS planning) Tj
+T*
+(? image pinning) Tj
+T*
+(? node count and node config structure) Tj
+T*
+() Tj
+T*
+(That is a lot of surface area for operators who are not living in this codebase.) Tj
+T*
+() Tj
+T*
+(2. Validation is late) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Many mistakes are only discovered during or after Terraform operations, for example:) Tj
+T*
+() Tj
+T*
+(? missing Secret Manager secrets) Tj
+T*
+(? secret name typos) Tj
+T*
+(? wrong project ID) Tj
+T*
+(? APIs not enabled) Tj
+T*
+(? missing IAM permissions) Tj
+T*
+(? bad DNS assumptions) Tj
+T*
+() Tj
+T*
+(3. The partner-facing config is shaped like the implementation) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(The `node_configs` object is useful for Terraform, but it is not the simplest mental model) Tj
+T*
+(for a partner operator.) Tj
+T*
+() Tj
+T*
+(4. Internal evolution is coupled to partner-facing docs) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(As the app changes, the team needs to add secrets, env vars, and deployment rules. That is) Tj
+T*
+(normal. The problem is that the partner deployment interface changes too directly and too) Tj
+T*
+(often.) Tj
+T*
+() Tj
+T*
+(RECOMMENDED APPROACH) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 1225 >>
+stream
+BT
+/F1 11 Tf
+54 738 Td
+15 TL
+() Tj
+T*
+() Tj
+T*
+(Build a **partner deployment wrapper CLI** that sits in front of the existing Terraform) Tj
+T*
+(module.) Tj
+T*
+() Tj
+T*
+(Core idea) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Partners should describe **node intent**, not Terraform structure.) Tj
+T*
+() Tj
+T*
+(The wrapper should:) Tj
+T*
+() Tj
+T*
+(1. ask for a small set of required inputs) Tj
+T*
+(2. write a normalized config file) Tj
+T*
+(3. validate the GCP environment and required secrets) Tj
+T*
+(4. generate the Terraform inputs deterministically) Tj
+T*
+(5. run safe Terraform subcommands in the correct order) Tj
+T*
+(6. print a short, guided next-step summary) Tj
+T*
+() Tj
+T*
+(This gives partners one paved road while letting the team keep Terraform as the) Tj
+T*
+(implementation layer.) Tj
+T*
+() Tj
+T*
+(PROPOSED USER EXPERIENCE) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Partner workflow) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(A partner should be able to do something like:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(mpc-partner init) Tj
+T*
+(mpc-partner validate) Tj
+T*
+(mpc-partner plan) Tj
+T*
+(mpc-partner deploy) Tj
+T*
+(mpc-partner status) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(What each command should do) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(`mpc-partner init`) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Guided setup:) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 1528 >>
+stream
+BT
+/F1 11 Tf
+54 738 Td
+15 TL
+() Tj
+T*
+(? choose or confirm deployment type: `mainnet`) Tj
+T*
+(? enter GCP project ID) Tj
+T*
+(? choose region and zone from supported defaults) Tj
+T*
+(? enter hostname/domain) Tj
+T*
+(? enter NEAR account ID) Tj
+T*
+(? enter node count if multi-node is still needed) Tj
+T*
+(? enter or confirm required secret names) Tj
+T*
+(? write a simple partner config file) Tj
+T*
+() Tj
+T*
+(`mpc-partner validate`) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Preflight checks before any Terraform planning:) Tj
+T*
+() Tj
+T*
+(? `gcloud` auth present) Tj
+T*
+(? target project exists) Tj
+T*
+(? required APIs enabled) Tj
+T*
+(? state bucket exists and is reachable) Tj
+T*
+(? required Secret Manager secrets exist) Tj
+T*
+(? required IAM roles are sufficient) Tj
+T*
+(? required DNS fields are populated) Tj
+T*
+(? config is internally consistent) Tj
+T*
+() Tj
+T*
+(This should fail early with human-readable messages.) Tj
+T*
+() Tj
+T*
+(`mpc-partner plan`) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(? generate Terraform input from the partner config) Tj
+T*
+(? run Terraform plan using the generated inputs) Tj
+T*
+(? summarize creates/changes in plain English) Tj
+T*
+() Tj
+T*
+(`mpc-partner deploy`) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(? require a successful validate step first) Tj
+T*
+(? optionally require confirmation if the plan changed since the last run) Tj
+T*
+(? run the apply path under the wrapper) Tj
+T*
+(? print the resulting IPs, DNS actions, and verification steps) Tj
+T*
+() Tj
+T*
+(`mpc-partner status`) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(? show deployment metadata) Tj
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Length 1744 >>
+stream
+BT
+/F1 11 Tf
+54 738 Td
+15 TL
+(? show instance names and load balancer IPs) Tj
+T*
+(? show expected DNS targets) Tj
+T*
+(? show a short verification checklist) Tj
+T*
+() Tj
+T*
+(STABLE PARTNER-FACING CONFIG) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(The wrapper should write a small config file that is easier to understand than raw Terraform) Tj
+T*
+(variables.) Tj
+T*
+() Tj
+T*
+(Example:) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(version: 1) Tj
+T*
+(profile: mainnet) Tj
+T*
+(project_id: partner-multichain) Tj
+T*
+(region: europe-west1) Tj
+T*
+(zone: europe-west1-b) Tj
+T*
+(state_bucket: multichain-terraform-partner) Tj
+T*
+(node_count: 1) Tj
+T*
+(nodes:) Tj
+T*
+(  - account_id: company.near) Tj
+T*
+(    domain: mpc.company.com) Tj
+T*
+(    secrets:) Tj
+T*
+(      account_sk: multichain-account-sk-mainnet-0) Tj
+T*
+(      cipher_sk: multichain-cipher-sk-mainnet-0) Tj
+T*
+(      sign_sk: multichain-sign-sk-mainnet-0) Tj
+T*
+(      sk_share: multichain-sk-share-mainnet-0) Tj
+T*
+(      eth_account_sk: multichain-eth-account-sk-mainnet-0) Tj
+T*
+(      eth_consensus_rpc: multichain-eth-consensus-rpc-url-mainnet) Tj
+T*
+(      eth_execution_rpc: multichain-eth-execution-rpc-url-mainnet) Tj
+T*
+(      sol_account_sk: multichain-sol-account-sk-mainnet-0) Tj
+T*
+(      sol_rpc_http: multichain-sol-rpc-http-url-mainnet) Tj
+T*
+(      sol_rpc_ws: multichain-sol-rpc-ws-url-mainnet) Tj
+T*
+(      hydration_rpc_ws: multichain-hydration-rpc-ws-url-mainnet) Tj
+T*
+(      hydration_signer_uri: multichain-hydration-signer-uri-mainnet) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(The wrapper can translate that into the current `terraform/partner-mainnet` input shape.) Tj
+T*
+() Tj
+T*
+(WHY A WRAPPER IS A BETTER FIT THAN EXPOSING MORE TERRAFORM) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(1. It reduces partner error rate) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 12 0 R >>
+endobj
+14 0 obj
+<< /Length 1278 >>
+stream
+BT
+/F1 11 Tf
+54 738 Td
+15 TL
+() Tj
+T*
+(A wrapper can catch bad input before Terraform touches anything.) Tj
+T*
+() Tj
+T*
+(2. It preserves your internal control) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(The team can keep changing:) Tj
+T*
+() Tj
+T*
+(? image tags) Tj
+T*
+(? startup scripts) Tj
+T*
+(? env wiring) Tj
+T*
+(? health checks) Tj
+T*
+(? logging defaults) Tj
+T*
+(? additional secret requirements) Tj
+T*
+() Tj
+T*
+(without making partners absorb every infrastructure detail directly.) Tj
+T*
+() Tj
+T*
+(3. It supports gradual migration) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(You do not need to rewrite the deployment stack all at once.) Tj
+T*
+() Tj
+T*
+(Phase 1 can keep the current Terraform intact and just wrap it.) Tj
+T*
+() Tj
+T*
+(4. It matches your support reality) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(If partners are easily confused, reducing visible moving parts matters more than maximizing) Tj
+T*
+(theoretical flexibility.) Tj
+T*
+() Tj
+T*
+(RECOMMENDED ARCHITECTURE) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Layer 1: partner config) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(A small YAML file committed or stored locally by the partner.) Tj
+T*
+() Tj
+T*
+(Layer 2: validation engine) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Checks local tooling, GCP access, APIs, IAM, secrets, and config completeness.) Tj
+T*
+() Tj
+T*
+(Layer 3: Terraform renderer) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 14 0 R >>
+endobj
+16 0 obj
+<< /Length 1432 >>
+stream
+BT
+/F1 11 Tf
+54 738 Td
+15 TL
+() Tj
+T*
+(Generates the exact Terraform variables or `.auto.tfvars.json` file expected by) Tj
+T*
+(`terraform/partner-mainnet`.) Tj
+T*
+() Tj
+T*
+(Layer 4: Terraform runner) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Runs Terraform in a controlled, guided way with consistent commands and output.) Tj
+T*
+() Tj
+T*
+(Layer 5: post-deploy guide) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Prints:) Tj
+T*
+() Tj
+T*
+(? IPs) Tj
+T*
+(? DNS records to create) Tj
+T*
+(? verification commands) Tj
+T*
+(? where to find logs) Tj
+T*
+(? rollback/update guidance) Tj
+T*
+() Tj
+T*
+(OPINIONATED DEFAULTS) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(To reduce support burden, the wrapper should make more decisions automatically.) Tj
+T*
+() Tj
+T*
+(Recommended defaults to hide from partners unless there is a strong reason not to:) Tj
+T*
+() Tj
+T*
+(? network = `default`) Tj
+T*
+(? subnetwork = `default`) Tj
+T*
+(? region default = `europe-west1`) Tj
+T*
+(? standard supported zone set) Tj
+T*
+(? default image source unless explicitly overridden by the team) Tj
+T*
+(? standard machine type) Tj
+T*
+(? default health check port/path) Tj
+T*
+(? standard logging and monitoring wiring) Tj
+T*
+(? standard secret naming suggestions) Tj
+T*
+() Tj
+T*
+(The more defaults that are team-owned, the fewer places partners can drift into unsupported) Tj
+T*
+(states.) Tj
+T*
+() Tj
+T*
+(VALIDATION RULES TO PRIORITIZE) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(These matter the most in a first implementation:) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 16 0 R >>
+endobj
+18 0 obj
+<< /Length 1705 >>
+stream
+BT
+/F1 11 Tf
+54 738 Td
+15 TL
+(1. GCP auth is active and points at the intended project.) Tj
+T*
+(2. Secret Manager API is enabled.) Tj
+T*
+(3. Compute Engine API is enabled.) Tj
+T*
+(4. Terraform state bucket exists.) Tj
+T*
+(5. Every referenced secret exists.) Tj
+T*
+(6. Every required config field is present.) Tj
+T*
+(7. Domain names are syntactically valid.) Tj
+T*
+(8. Node count matches the number of node entries.) Tj
+T*
+(9. The deployment image/tag is set to a supported value.) Tj
+T*
+(10. Required app feature secrets are present for the selected release profile.) Tj
+T*
+() Tj
+T*
+(RELEASE AND CHANGE-MANAGEMENT MODEL) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(The wrapper should support a versioned schema and a versioned deployment profile.) Tj
+T*
+() Tj
+T*
+(That means:) Tj
+T*
+() Tj
+T*
+(? wrapper config schema version, for example `version: 1`) Tj
+T*
+(? deployment profile version or release channel controlled by the team) Tj
+T*
+(? validation rules that can tell partners what changed between releases) Tj
+T*
+() Tj
+T*
+(This matters because the node app will continue to evolve.) Tj
+T*
+() Tj
+T*
+(MIGRATION STRATEGY) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Phase 1: wrapper-only, no Terraform redesign) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(? keep current `terraform/partner-mainnet`) Tj
+T*
+(? add a wrapper CLI and config schema) Tj
+T*
+(? add validation and generated tfvars) Tj
+T*
+(? update docs to tell partners to use the wrapper) Tj
+T*
+() Tj
+T*
+(Phase 2: reduce Terraform surface area) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(? simplify the Terraform variable contract) Tj
+T*
+(? move more defaults out of user-editable tfvars) Tj
+T*
+(? reduce direct editing of raw Terraform inputs) Tj
+T*
+() Tj
+T*
+(Phase 3: optional deeper cleanup) Tj
+T*
+() Tj
+T*
+() Tj
+ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 18 0 R >>
+endobj
+20 0 obj
+<< /Length 1541 >>
+stream
+BT
+/F1 11 Tf
+54 738 Td
+15 TL
+(? split internal-only vs partner-facing modules) Tj
+T*
+(? formalize profiles for mainnet/testnet) Tj
+T*
+(? add more robust deployment health/status commands) Tj
+T*
+() Tj
+T*
+(RISKS AND MITIGATIONS) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Risk: wrapper becomes a second system to maintain) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Mitigation:) Tj
+T*
+() Tj
+T*
+(? keep it thin) Tj
+T*
+(? treat Terraform as the source of truth for infrastructure behavior) Tj
+T*
+(? only own translation, validation, and user experience in the wrapper) Tj
+T*
+() Tj
+T*
+(Risk: Terraform internals still leak through) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Mitigation:) Tj
+T*
+() Tj
+T*
+(? standardize generated tfvars) Tj
+T*
+(? do not require partners to edit Terraform files directly in the normal path) Tj
+T*
+() Tj
+T*
+(Risk: feature growth keeps adding new partner inputs) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Mitigation:) Tj
+T*
+() Tj
+T*
+(? group feature-specific settings into profiles or feature blocks) Tj
+T*
+(? prefer team-owned defaults where possible) Tj
+T*
+(? add validation messages that explain what new inputs are required and why) Tj
+T*
+() Tj
+T*
+(RECOMMENDED PHASE 1 DELIVERABLES) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(1. A design-approved partner config schema.) Tj
+T*
+(2. A wrapper CLI skeleton.) Tj
+T*
+(3. A validation command with strong preflight checks.) Tj
+T*
+(4. A Terraform rendering step that outputs generated tfvars.) Tj
+T*
+(5. A guided deploy command.) Tj
+T*
+(6. Updated README flow that makes the wrapper the default path.) Tj
+T*
+() Tj
+T*
+(SUGGESTED SUCCESS METRICS) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+21 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 20 0 R >>
+endobj
+22 0 obj
+<< /Length 1183 >>
+stream
+BT
+/F1 11 Tf
+54 738 Td
+15 TL
+() Tj
+T*
+(? fewer partner setup support messages) Tj
+T*
+(? fewer Terraform failures caused by missing secrets or APIs) Tj
+T*
+(? faster time from project creation to successful first deploy) Tj
+T*
+(? fewer docs-only onboarding questions) Tj
+T*
+(? fewer partner edits to raw Terraform files) Tj
+T*
+() Tj
+T*
+(RECOMMENDATION) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Proceed with a **thin CLI wrapper over the current partner mainnet Terraform** rather than a) Tj
+T*
+(ground-up infrastructure redesign.) Tj
+T*
+() Tj
+T*
+(That gives the team the best balance of:) Tj
+T*
+() Tj
+T*
+(? lower partner overhead) Tj
+T*
+(? preserved GCP-only assumptions) Tj
+T*
+(? continued ability to change deployment details) Tj
+T*
+(? lower migration risk) Tj
+T*
+(? a gradual path away from raw Terraform as the primary partner interface) Tj
+T*
+() Tj
+T*
+(NEXT STAGES) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(After this design document, the recommended order is:) Tj
+T*
+() Tj
+T*
+(1. define the toolset for the wrapper implementation) Tj
+T*
+(2. propose repo code additions and file layout) Tj
+T*
+(3. draft the first code changes) Tj
+T*
+(4. update the README so the wrapper becomes the primary documented path) Tj
+ET
+endstream
+endobj
+23 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 22 0 R >>
+endobj
+xref
+0 24
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000183 00000 n 
+0000000253 00000 n 
+0000002223 00000 n 
+0000002349 00000 n 
+0000003853 00000 n 
+0000003979 00000 n 
+0000005256 00000 n 
+0000005382 00000 n 
+0000006963 00000 n 
+0000007091 00000 n 
+0000008888 00000 n 
+0000009016 00000 n 
+0000010347 00000 n 
+0000010475 00000 n 
+0000011960 00000 n 
+0000012088 00000 n 
+0000013846 00000 n 
+0000013974 00000 n 
+0000015568 00000 n 
+0000015696 00000 n 
+0000016932 00000 n 
+trailer
+<< /Size 24 /Root 1 0 R >>
+startxref
+17060
+%%EOF
