@@ -1,0 +1,56 @@
+#!/bin/bash
+set -euo pipefail
+
+exec > >(tee -a /var/log/mpc-startup.log | logger -t mpc-startup -s 2>/dev/console) 2>&1
+
+echo "Starting multichain startup script"
+
+mkdir -p /var/redis
+mkdir -p /etc/mpc
+
+systemctl start docker || true
+until systemctl is-active --quiet docker; do
+  echo "Waiting for docker to become active..."
+  sleep 2
+  systemctl start docker || true
+done
+
+cat >/etc/mpc/multichain.env <<'EOF'
+%{ for item in static_env ~}
+${item.name}=${item.value}
+%{ endfor ~}
+MPC_NODE_ID=${node_id}
+MPC_GCP_PROJECT_ID=${project_id}
+MPC_ACCOUNT_ID=${account_id}
+MPC_ACCOUNT_SK=${account_sk}
+MPC_CIPHER_SK=${cipher_sk}
+MPC_SIGN_SK=${sign_sk}
+AWS_ACCESS_KEY_ID=${aws_access_key_id}
+AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
+MPC_LOCAL_ADDRESS=${local_address}
+MPC_SK_SHARE_SECRET_ID=${sk_share_secret_id}
+MPC_ENV=${env_name}
+MPC_REDIS_URL=${redis_url}
+MPC_ETH_ACCOUNT_SK=${eth_account_sk}
+MPC_ETH_CONSENSUS_RPC_HTTP_URL=${eth_consensus_rpc_http_url}
+MPC_ETH_EXECUTION_RPC_HTTP_URL=${eth_execution_rpc_http_url}
+MPC_ETH_CONTRACT_ADDRESS=${eth_contract_address}
+MPC_SOL_ACCOUNT_SK=${sol_account_sk}
+MPC_SOL_RPC_URL=${sol_rpc_url}
+MPC_SOL_PROGRAM_ADDRESS=${sol_program_address}
+EOF
+
+chmod 0600 /etc/mpc/multichain.env
+
+docker rm -f multichain || true
+docker pull "${image}"
+
+docker run -d \
+  --name multichain \
+  --restart unless-stopped \
+  -p ${image_port}:${image_port} \
+  -v /var/redis:/data \
+  --env-file /etc/mpc/multichain.env \
+  "${image}"
+
+echo "Startup script completed"
