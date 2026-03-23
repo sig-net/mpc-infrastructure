@@ -2,11 +2,12 @@ from pathlib import Path
 
 import typer
 
-from .config import default_config_path, load_config, write_starter_config
+from .config import build_interactive_starter, default_config_path, load_config, write_starter_config
 from .constants import DEFAULT_NETWORK_NAME, TERRAFORM_DIRS
 from .gcloud import create_secret_interactively
 from .render import write_generated_tfvars
 from .terraform import ensure_backend_bucket, plan_summary, terraform_workdir
+from .ui import banner, error, info, step, success, warn
 from .upgrade import resolve_release_contract, resolve_target_tag, status_against_latest_release
 from .validate import validate_config_and_environment
 
@@ -25,22 +26,55 @@ def init(
         raise typer.BadParameter(f"Config already exists at {config_path}. Use --force to overwrite.")
     if network_name not in TERRAFORM_DIRS:
         raise typer.BadParameter("--network must be one of: mainnet, testnet")
-    write_starter_config(config_path, network_name=network_name)  # type: ignore[arg-type]
-    typer.echo(f"Wrote starter config to {config_path}")
-    typer.echo(f"Selected network: {network_name}")
+
+    banner("mpc-infra init", f"Preparing a {network_name} deployment config")
+    project_id = typer.prompt("GCP project ID")
+    bucket_default = f"multichain-terraform-{project_id.replace('_', '-')}"
+    state_bucket = typer.prompt("Terraform state bucket", default=bucket_default)
+    account_placeholder = "company.near" if network_name == "mainnet" else "company.testnet"
+    account_id = typer.prompt("Node account ID", default=account_placeholder)
+    domain = None
+    if network_name == "mainnet":
+        domain = typer.prompt("Node domain (for example: mpc.company.com)")
+
+    with step("Writing starter config"):
+        starter = build_interactive_starter(
+            network_name=network_name,  # type: ignore[arg-type]
+            project_id=project_id,
+            state_bucket=state_bucket,
+            account_id=account_id,
+            domain=domain,
+        )
+        write_starter_config(config_path, network_name=network_name, starter=starter)  # type: ignore[arg-type]
+
+    success(f"Wrote starter config to {config_path}")
+    info(f"Selected network: {network_name}")
+    warn("Review the generated secret names before running validate.")
 
 
 @app.command()
 def validate(path: Path | None = None) -> None:
     """Validate config and environment."""
     config_path = path or default_config_path()
-    config = load_config(config_path)
-    report = validate_config_and_environment(config)
-    typer.echo(f"Validation ok: {report.ok}")
-    typer.echo(f"Deployment network: {config.network_name}")
+    banner("mpc-infra validate", f"Checking {config_path}")
+    with step("Loading deployment config"):
+        config = load_config(config_path)
+    with step("Running GCP, secret, and Terraform preflight checks"):
+        report = validate_config_and_environment(config)
+
+    info(f"Deployment network: {config.network_name}")
     for finding in report.findings:
-        typer.echo(f"[{finding.level}] {finding.message}")
-    if not report.ok:
+        if finding.level == "info":
+            info(finding.message)
+        elif finding.level == "warning":
+            warn(finding.message)
+        else:
+            error(finding.message)
+
+    if report.ok:
+        success("Validation passed")
+    else:
+        error("Validation failed")
         raise typer.Exit(code=1)
 
 
@@ -48,14 +82,19 @@ def validate(path: Path | None = None) -> None:
 def plan(path: Path | None = None) -> None:
     """Render generated tfvars, align backend bucket, and run terraform plan."""
     config_path = path or default_config_path()
-    config = load_config(config_path)
+    banner("mpc-infra plan", f"Planning from {config_path}")
+    with step("Loading deployment config"):
+        config = load_config(config_path)
     workdir = terraform_workdir(config.network_name)
-    generated = write_generated_tfvars(config, workdir)
-    ensure_backend_bucket(workdir, config.state_bucket)
-    typer.echo(f"Deployment network: {config.network_name}")
-    typer.echo(f"Generated Terraform inputs: {generated}")
-    summary = plan_summary(config.network_name, generated)
-    typer.echo(summary)
+    with step("Rendering generated Terraform inputs"):
+        generated = write_generated_tfvars(config, workdir)
+    with step("Aligning Terraform backend bucket"):
+        ensure_backend_bucket(workdir, config.state_bucket)
+    info(f"Deployment network: {config.network_name}")
+    info(f"Generated Terraform inputs: {generated}")
+    with step("Running terraform plan"):
+        summary = plan_summary(config.network_name, generated)
+    success(summary)
 
 
 @app.command()
@@ -65,22 +104,24 @@ def deploy(path: Path | None = None) -> None:
     config = load_config(config_path)
     workdir = terraform_workdir(config.network_name)
     generated = write_generated_tfvars(config, workdir)
-    typer.echo(f"Generated Terraform inputs: {generated}")
-    typer.echo("Terraform deploy integration is not implemented yet.")
+    info(f"Generated Terraform inputs: {generated}")
+    warn("Terraform deploy integration is not implemented yet.")
 
 
 @app.command()
 def status() -> None:
     """Show deployment/version posture against the latest release."""
-    report = status_against_latest_release()
-    typer.echo(f"Deployed version: {report.deployed_version}")
-    typer.echo(f"Latest release: {report.latest_version}")
-    typer.echo(f"Upgrade available: {report.upgrade_available}")
+    banner("mpc-infra status", "Checking deployment posture")
+    with step("Resolving deployment posture"):
+        report = status_against_latest_release()
+    info(f"Deployed version: {report.deployed_version}")
+    info(f"Latest release: {report.latest_version}")
+    info(f"Upgrade available: {report.upgrade_available}")
     if report.missing_secrets:
-        typer.echo("Missing required secrets:")
+        warn("Missing required secrets:")
         for secret in report.missing_secrets:
-            typer.echo(f"- {secret}")
-    typer.echo(f"Recommended action: {report.recommended_action}")
+            info(secret)
+    success(f"Recommended action: {report.recommended_action}")
 
 
 @app.command()
@@ -89,16 +130,20 @@ def upgrade(
     create_missing_secrets: bool = typer.Option(default=False, help="Guide the operator through creating missing secrets for the target release."),
 ) -> None:
     """Resolve the target image tag and release contract for upgrades."""
-    target = resolve_target_tag(tag)
-    contract = resolve_release_contract(tag)
-    typer.echo(f"Target upgrade tag: {target}")
-    typer.echo(f"Target release contract version: {contract.version}")
+    banner("mpc-infra upgrade", "Resolving target release")
+    with step("Resolving target release metadata"):
+        target = resolve_target_tag(tag)
+        contract = resolve_release_contract(tag)
+    info(f"Target upgrade tag: {target}")
+    info(f"Target release contract version: {contract.version}")
     for secret in contract.required_secrets:
-        typer.echo(f"Required secret: {secret.key} -> suggested name {secret.secret_name_suggestion}")
+        info(f"Required secret: {secret.key} -> suggested name {secret.secret_name_suggestion}")
         if create_missing_secrets:
-            finding = create_secret_interactively(project_id="<project-from-config>", secret_name=secret.secret_name_suggestion, description=secret.description)
-            typer.echo(f"[{finding.level}] {finding.message}")
-
-
-if __name__ == "__main__":
-    app()
+            with step(f"Handling secret {secret.secret_name_suggestion}"):
+                finding = create_secret_interactively(project_id="<project-from-config>", secret_name=secret.secret_name_suggestion, description=secret.description)
+            if finding.level == "info":
+                info(finding.message)
+            elif finding.level == "warning":
+                warn(finding.message)
+            else:
+                error(finding.message)

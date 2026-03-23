@@ -59,10 +59,26 @@ def _starter_for(network_name: NetworkName) -> dict:
     }
 
 
-def write_starter_config(path: Path, network_name: NetworkName = DEFAULT_NETWORK_NAME) -> None:
+def build_interactive_starter(
+    network_name: NetworkName,
+    project_id: str,
+    state_bucket: str,
+    account_id: str,
+    domain: str | None = None,
+) -> dict:
     starter = _starter_for(network_name)
+    starter["project_id"] = project_id
+    starter["state_bucket"] = state_bucket
+    starter["nodes"][0]["account_id"] = account_id
+    if network_name == "mainnet" and domain:
+        starter["nodes"][0]["domain"] = domain
+    return starter
+
+
+def write_starter_config(path: Path, network_name: NetworkName = DEFAULT_NETWORK_NAME, starter: dict | None = None) -> None:
+    content = starter or _starter_for(network_name)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(yaml.safe_dump(starter, sort_keys=False))
+    path.write_text(yaml.safe_dump(content, sort_keys=False))
 
 
 def load_config(path: Path) -> PartnerDeploymentConfig:
