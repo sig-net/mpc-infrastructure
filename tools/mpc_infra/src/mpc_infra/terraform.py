@@ -21,8 +21,13 @@ def terraform_init(workdir: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["terraform", "init", "-input=false"], cwd=workdir, capture_output=True, text=True)
 
 
-def terraform_plan(workdir: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["terraform", "plan", "-input=false", "-no-color"], cwd=workdir, capture_output=True, text=True)
+def terraform_plan(workdir: Path, var_file: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["terraform", "plan", "-input=false", "-no-color", f"-var-file={var_file.name}"],
+        cwd=workdir,
+        capture_output=True,
+        text=True,
+    )
 
 
 def summarize_plan(stdout: str) -> str:
@@ -32,12 +37,12 @@ def summarize_plan(stdout: str) -> str:
     return "Terraform plan completed; summary line not found."
 
 
-def plan_summary(network_name: NetworkName) -> str:
+def plan_summary(network_name: NetworkName, var_file: Path) -> str:
     workdir = terraform_workdir(network_name)
     init_result = terraform_init(workdir)
     if init_result.returncode != 0:
         raise RuntimeError(init_result.stderr.strip() or init_result.stdout.strip() or "terraform init failed")
-    result = terraform_plan(workdir)
+    result = terraform_plan(workdir, var_file)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "terraform plan failed")
     return summarize_plan(result.stdout)

@@ -6,7 +6,7 @@ DEFAULT_ZONE = "europe-west1-b"
 DEFAULT_NETWORK = "default"
 DEFAULT_SUBNETWORK = "default"
 CONFIG_FILENAME = "partner-deployment.yaml"
-GENERATED_TFVARS_FILENAME = "generated.auto.tfvars.json"
+GENERATED_TFVARS_FILENAME = "generated.tfvars.json"
 REQUIRED_GCP_APIS = [
     "compute.googleapis.com",
     "secretmanager.googleapis.com",

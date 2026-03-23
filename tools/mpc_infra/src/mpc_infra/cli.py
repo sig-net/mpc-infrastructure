@@ -54,7 +54,7 @@ def plan(path: Path | None = None) -> None:
     ensure_backend_bucket(workdir, config.state_bucket)
     typer.echo(f"Deployment network: {config.network_name}")
     typer.echo(f"Generated Terraform inputs: {generated}")
-    summary = plan_summary(config.network_name)
+    summary = plan_summary(config.network_name, generated)
     typer.echo(summary)
 
 

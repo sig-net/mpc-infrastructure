@@ -24,7 +24,7 @@ The scaffold on this branch now has a first real pass for:
 
 - `init` — writes a partner-facing starter YAML config aligned to the current `terraform/partner-mainnet` shape
 - `validate` — validates config shape plus live GCP/tooling prerequisites such as binaries, project access, enabled APIs, state bucket, and required Secret Manager secret names
-- `plan` — renders generated Terraform inputs to `terraform/partner-mainnet/generated.auto.tfvars.json`, aligns the backend bucket in `resources.tf`, and runs `terraform plan`
+- `plan` — renders generated Terraform inputs to `terraform/partner-mainnet/generated.tfvars.json`, aligns the backend bucket in `resources.tf`, and runs `terraform plan -var-file=generated.tfvars.json`
 
 Still intentionally stubbed or partial:
 
@@ -125,7 +125,7 @@ Responsibilities:
 Generated artifact proposal:
 
 ```text
-terraform/partner-mainnet/generated.auto.tfvars.json
+terraform/partner-mainnet/generated.tfvars.json
 ```
 
 That file should be tool-owned and reproducible.
@@ -208,7 +208,7 @@ The wrapper should own generated files, not user-authored files.
 Proposed generated file:
 
 ```text
-terraform/partner-mainnet/generated.auto.tfvars.json
+terraform/partner-mainnet/generated.tfvars.json
 ```
 
 Properties:
@@ -317,7 +317,7 @@ Implement:
 
 ### Step 3: Terraform renderer
 
-Implement rendering from partner YAML to `generated.auto.tfvars.json`.
+Implement rendering from partner YAML to `generated.tfvars.json`.
 
 ### Step 4: validation engine
 

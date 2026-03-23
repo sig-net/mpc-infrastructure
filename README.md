@@ -45,7 +45,7 @@ terraform/partner-mainnet/
 terraform/partner-mainnet/scripts/
 terraform/partner-mainnet/resources.tf
 terraform/partner-mainnet/variables.tf
-terraform/partner-mainnet/terraform-mainnet-example.auto.tfvars
+terraform/partner-mainnet/terraform-mainnet-example.tfvars
 ```
 
 ---
@@ -410,7 +410,7 @@ If you **do** use a shared or custom VPC:
 Copy the example file:
 
 ```bash
-cp terraform-mainnet-example.auto.tfvars terraform-mainnet.auto.tfvars
+cp terraform-mainnet-example.tfvars terraform-mainnet.auto.tfvars
 ```
 
 Then edit `terraform-mainnet.auto.tfvars`.
