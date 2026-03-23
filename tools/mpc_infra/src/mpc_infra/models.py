@@ -24,7 +24,6 @@ class SecretRefs(BaseModel):
 class NodeConfig(BaseModel):
     account_id: str
     domain: str | None = None
-    local_address: str | None = None
     secrets: SecretRefs
 
 

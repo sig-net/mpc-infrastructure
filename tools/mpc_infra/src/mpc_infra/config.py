@@ -11,7 +11,7 @@ from .constants import (
     DEFAULT_ZONE,
     PROFILE_DEFAULTS,
 )
-from .models import PartnerDeploymentConfig, NetworkName
+from .models import NetworkName, PartnerDeploymentConfig
 
 
 def default_config_path(cwd: Path | None = None) -> Path:

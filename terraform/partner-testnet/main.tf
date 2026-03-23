@@ -32,6 +32,10 @@ module "gce-container" {
         value = "${count.index}"
       },
       {
+        name  = "MPC_GCP_PROJECT_ID"
+        value = var.project_id
+      },
+      {
         name  = "MPC_ACCOUNT_ID"
         value = var.node_configs["${count.index}"].account
       },

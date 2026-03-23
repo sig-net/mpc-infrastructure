@@ -48,7 +48,6 @@ def test_render_partner_testnet_tfvars() -> None:
         nodes=[
             NodeConfig(
                 account_id="company.testnet",
-                local_address="http://1.2.3.4:3000",
                 secrets=SecretRefs(
                     account_sk="a",
                     cipher_sk="b",
