@@ -8,7 +8,7 @@ Planned commands:
 - `mpc-infra validate`
 - `mpc-infra plan`
 - `mpc-infra deploy`
-- `mpc-infra status`
+- `mpc-infra status` (deployment/version posture check)
 - `mpc-infra upgrade`
 
 The upgrade path is intended to evolve into a release migration assistant that can:

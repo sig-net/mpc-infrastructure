@@ -246,11 +246,14 @@ Again, Python subprocess is enough.
 
 Needs:
 
-- read deployment outputs
-- query Compute/GCLB state as needed
-- print verification guidance
+- detect deployed/current image tag or release
+- resolve the latest published release
+- compare deployment posture against the latest release contract
+- detect missing required secrets or other contract drift
+- print a recommended next action
+- optionally read deployment outputs and query Compute/GCLB state as needed
 
-This can be done through `terraform output -json` plus selective `gcloud` lookups.
+This can be done through a mix of generated config, `terraform output -json`, selective `gcloud` lookups, and release metadata resolution.
 
 ### `mpc-infra upgrade`
 

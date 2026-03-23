@@ -150,10 +150,13 @@ This should fail early with human-readable messages.
 
 #### `mpc-infra status`
 
-- show deployment metadata
-- show instance names and load balancer IPs
-- show expected DNS targets
-- show a short verification checklist
+- detect the currently deployed image tag/version
+- resolve the latest published release
+- tell the operator whether they are up to date or behind
+- compare the current deployment against the latest release contract
+- detect missing required secrets or other release-contract drift
+- print a short recommended next action, such as `up to date` or `run mpc-infra upgrade`
+- optionally include useful deployment metadata like instance names or load balancer IPs as secondary information
 
 #### `mpc-infra upgrade`
 
@@ -254,10 +257,14 @@ Generates the exact Terraform variables or `.auto.tfvars.json` file expected by 
 
 Runs Terraform in a controlled, guided way with consistent commands and output.
 
-### Layer 5: post-deploy guide
+### Layer 5: posture + post-deploy guidance
 
 Prints:
 
+- deployed version and latest release
+- whether an upgrade is available
+- missing release-contract requirements such as new secrets
+- recommended next action
 - IPs
 - DNS records to create
 - verification commands

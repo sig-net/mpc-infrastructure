@@ -47,6 +47,14 @@ class ReleaseContract(BaseModel):
     required_secrets: list[ReleaseSecretRequirement] = []
 
 
+class StatusReport(BaseModel):
+    deployed_version: str
+    latest_version: str
+    upgrade_available: bool
+    missing_secrets: list[str] = []
+    recommended_action: str
+
+
 class ValidationFinding(BaseModel):
     level: Literal["info", "warning", "error"]
     message: str

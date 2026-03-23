@@ -7,7 +7,7 @@ from .constants import TERRAFORM_PARTNER_MAINNET_DIR
 from .gcloud import create_secret_interactively
 from .render import write_generated_tfvars
 from .terraform import deploy_summary, plan_summary
-from .upgrade import resolve_release_contract, resolve_target_tag
+from .upgrade import resolve_release_contract, resolve_target_tag, status_against_latest_release
 from .validate import validate_config_and_environment
 
 app = typer.Typer(help="Partner deployment wrapper for MPC infrastructure.")
@@ -54,7 +54,16 @@ def deploy(path: Path | None = None) -> None:
 
 @app.command()
 def status() -> None:
-    """Show the intended Terraform working directory for status inspection."""
+    """Show deployment/version posture against the latest release."""
+    report = status_against_latest_release()
+    typer.echo(f"Deployed version: {report.deployed_version}")
+    typer.echo(f"Latest release: {report.latest_version}")
+    typer.echo(f"Upgrade available: {report.upgrade_available}")
+    if report.missing_secrets:
+        typer.echo("Missing required secrets:")
+        for secret in report.missing_secrets:
+            typer.echo(f"- {secret}")
+    typer.echo(f"Recommended action: {report.recommended_action}")
     typer.echo(f"Terraform working directory: {TERRAFORM_PARTNER_MAINNET_DIR}")
 
 

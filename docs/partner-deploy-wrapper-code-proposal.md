@@ -128,9 +128,12 @@ Responsibilities:
 
 Responsibilities:
 
-- read Terraform outputs
-- resolve useful deployment metadata
-- print instance names, load balancer IPs, and next checks
+- detect the currently deployed image tag/version
+- resolve the latest published release
+- compare deployment posture against the latest release contract
+- detect missing required secrets or other contract drift
+- print a recommended next step for the operator
+- optionally include useful deployment metadata such as instance names and load balancer IPs
 
 ### `upgrade`
 
