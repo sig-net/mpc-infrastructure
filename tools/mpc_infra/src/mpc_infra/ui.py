@@ -1,8 +1,8 @@
 from contextlib import contextmanager
 
+import questionary
 from rich.console import Console
 from rich.panel import Panel
-from rich.status import Status
 
 console = Console()
 
@@ -34,3 +34,16 @@ def error(message: str) -> None:
 def step(message: str):
     with console.status(f"[bold blue]{message}[/bold blue]", spinner="dots") as status:
         yield status
+
+
+def select(message: str, choices: list[str], default: str | None = None) -> str:
+    selected = questionary.autocomplete(
+        message,
+        choices=choices,
+        default=default,
+        match_middle=True,
+        validate=lambda value: True if value in choices else "Choose one of the listed options.",
+    ).ask()
+    if selected is None:
+        raise KeyboardInterrupt
+    return selected

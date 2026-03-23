@@ -7,7 +7,7 @@ from .constants import DEFAULT_NETWORK_NAME, TERRAFORM_DIRS
 from .gcloud import create_secret_interactively
 from .render import write_generated_tfvars
 from .terraform import ensure_backend_bucket, plan_summary, terraform_workdir
-from .ui import banner, error, info, step, success, warn
+from .ui import banner, error, info, select, step, success, warn
 from .upgrade import resolve_release_contract, resolve_target_tag, status_against_latest_release
 from .validate import validate_config_and_environment
 
@@ -15,16 +15,11 @@ app = typer.Typer(help="Partner deployment wrapper for MPC infrastructure.")
 
 
 def _prompt_for_network() -> str:
-    typer.echo("Select deployment network:")
-    typer.echo("  1) testnet")
-    typer.echo("  2) mainnet")
-    while True:
-        choice = typer.prompt("Enter choice", default="1").strip().lower()
-        if choice in {"1", "testnet", "t"}:
-            return "testnet"
-        if choice in {"2", "mainnet", "m"}:
-            return "mainnet"
-        warn("Please choose 1/testnet or 2/mainnet.")
+    return select(
+        "Select deployment network",
+        choices=["testnet", "mainnet"],
+        default="testnet",
+    )
 
 
 @app.command()
