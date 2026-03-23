@@ -92,12 +92,24 @@ module "gce-container" {
         value = data.google_secret_manager_secret_version.sol_account_sk_secret_id[count.index].secret_data
       },
       {
-        name  = "MPC_SOL_RPC_URL"
-        value = data.google_secret_manager_secret_version.sol_rpc_url_secret_id[count.index].secret_data
+        name  = "MPC_SOL_RPC_HTTP_URL"
+        value = data.google_secret_manager_secret_version.sol_rpc_http_url_secret_id[count.index].secret_data
+      },
+      {
+        name  = "MPC_SOL_RPC_WS_URL"
+        value = data.google_secret_manager_secret_version.sol_rpc_ws_url_secret_id[count.index].secret_data
       },
       {
         name  = "MPC_SOL_PROGRAM_ADDRESS"
         value = var.node_configs["${count.index}"].sol_program_address
+      },
+      {
+        name  = "MPC_HYDRATION_RPC_WS_URL"
+        value = var.node_configs["${count.index}"].hydration_rpc_ws_url
+      },
+      {
+        name  = "MPC_HYDRATION_SIGNER_URI"
+        value = var.node_configs["${count.index}"].hydration_signer_uri
       }
     ])
   }
