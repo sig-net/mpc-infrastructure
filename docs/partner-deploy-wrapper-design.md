@@ -3,6 +3,7 @@
 Date: 2026-03-23
 Repo: `sig-net/mpc-infrastructure`
 Scope: design proposal for a simpler GCP-only partner deployment flow for mainnet nodes
+Tool name: `mpc-infra`
 
 ## Executive summary
 
@@ -17,7 +18,7 @@ The current partner deployment flow works, but it asks partner operators to unde
 
 That is survivable for internal operators, but it creates friction for partners who are already prone to getting lost in large or highly technical setup flows.
 
-The recommended direction is **not** to replace the existing Terraform immediately. Instead, build a thin, opinionated **CLI wrapper** around the current `terraform/partner-mainnet` deployment so partners interact with a guided workflow while the chain signatures team keeps control of the underlying deployment details.
+The recommended direction is **not** to replace the existing Terraform immediately. Instead, build a thin, opinionated **CLI wrapper** called `mpc-infra` around the current `terraform/partner-mainnet` deployment so partners interact with a guided workflow while the chain signatures team keeps control of the underlying deployment details.
 
 ## Goals
 
@@ -96,16 +97,17 @@ This gives partners one paved road while letting the team keep Terraform as the 
 A partner should be able to do something like:
 
 ```bash
-mpc-partner init
-mpc-partner validate
-mpc-partner plan
-mpc-partner deploy
-mpc-partner status
+mpc-infra init
+mpc-infra validate
+mpc-infra plan
+mpc-infra deploy
+mpc-infra status
+mpc-infra upgrade
 ```
 
 ### What each command should do
 
-#### `mpc-partner init`
+#### `mpc-infra init`
 
 Guided setup:
 
@@ -118,7 +120,7 @@ Guided setup:
 - enter or confirm required secret names
 - write a simple partner config file
 
-#### `mpc-partner validate`
+#### `mpc-infra validate`
 
 Preflight checks before any Terraform planning:
 
@@ -133,25 +135,40 @@ Preflight checks before any Terraform planning:
 
 This should fail early with human-readable messages.
 
-#### `mpc-partner plan`
+#### `mpc-infra plan`
 
 - generate Terraform input from the partner config
 - run Terraform plan using the generated inputs
 - summarize creates/changes in plain English
 
-#### `mpc-partner deploy`
+#### `mpc-infra deploy`
 
 - require a successful validate step first
 - optionally require confirmation if the plan changed since the last run
 - run the apply path under the wrapper
 - print the resulting IPs, DNS actions, and verification steps
 
-#### `mpc-partner status`
+#### `mpc-infra status`
 
 - show deployment metadata
 - show instance names and load balancer IPs
 - show expected DNS targets
 - show a short verification checklist
+
+#### `mpc-infra upgrade`
+
+- detect the currently deployed image tag
+- resolve the target image tag from the latest published release by default
+- support an explicit target with `--tag <tag>`
+- tell the operator when no upgrade is needed
+- if an upgrade is needed, update the deployment input and safely restart/redeploy the node
+- print the resulting version and post-upgrade verification guidance
+
+Recommended later flags:
+
+- `--check-only`
+- `--dry-run`
+- `--yes`
 
 ## Stable partner-facing config
 
@@ -294,17 +311,34 @@ This matters because the node app will continue to evolve.
 ### Phase 1: wrapper-only, no Terraform redesign
 
 - keep current `terraform/partner-mainnet`
-- add a wrapper CLI and config schema
+- add the `mpc-infra` CLI and config schema
 - add validation and generated tfvars
 - update docs to tell partners to use the wrapper
+- include `status` as a standard post-deploy operator command
 
-### Phase 2: reduce Terraform surface area
+### Phase 2: upgrade workflow
+
+- add `mpc-infra upgrade`
+- default target should resolve from the latest published release
+- support `--tag <tag>` for explicit pinning
+- check the currently deployed tag before changing anything
+- provide post-upgrade verification output
+
+### Phase 3: greenfield GCP bootstrap
+
+- bootstrap a new partner GCP project from near-empty state
+- enable required APIs
+- create the Terraform state bucket
+- validate IAM prerequisites
+- optionally create baseline secrets placeholders and other required environment scaffolding
+
+### Phase 4: reduce Terraform surface area
 
 - simplify the Terraform variable contract
 - move more defaults out of user-editable tfvars
 - reduce direct editing of raw Terraform inputs
 
-### Phase 3: optional deeper cleanup
+### Phase 5: optional deeper cleanup
 
 - split internal-only vs partner-facing modules
 - formalize profiles for mainnet/testnet
@@ -354,7 +388,7 @@ Mitigation:
 
 ## Recommendation
 
-Proceed with a **thin CLI wrapper over the current partner mainnet Terraform** rather than a ground-up infrastructure redesign.
+Proceed with a **thin `mpc-infra` CLI wrapper over the current partner mainnet Terraform** rather than a ground-up infrastructure redesign.
 
 That gives the team the best balance of:
 
@@ -368,7 +402,7 @@ That gives the team the best balance of:
 
 After this design document, the recommended order is:
 
-1. define the toolset for the wrapper implementation
+1. define the toolset for the `mpc-infra` implementation
 2. propose repo code additions and file layout
 3. draft the first code changes
 4. update the README so the wrapper becomes the primary documented path
