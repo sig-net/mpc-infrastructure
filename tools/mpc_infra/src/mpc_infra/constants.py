@@ -17,6 +17,10 @@ TERRAFORM_DIRS = {
     "mainnet": REPO_ROOT / "terraform" / "partner-mainnet",
     "testnet": REPO_ROOT / "terraform" / "partner-testnet",
 }
+EXAMPLE_TFVARS = {
+    "mainnet": TERRAFORM_DIRS["mainnet"] / "terraform-mainnet-example.tfvars",
+    "testnet": TERRAFORM_DIRS["testnet"] / "terraform-testnet-example.tfvars",
+}
 MPC_RELEASE_REPO = "sig-net/mpc"
 PROFILE_DEFAULTS = {
     "mainnet": {

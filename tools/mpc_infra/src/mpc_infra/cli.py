@@ -20,10 +20,10 @@ from .terraform import (
 )
 from .ui import banner, error, info, render_outputs_table, resource_progress, select, step, success, warn
 from .upgrade import (
+    expected_image_from_examples,
     resolve_release_contract,
     resolve_target_tag,
     status_against_latest_release,
-    target_image_for_network,
 )
 from .validate import validate_config_and_environment
 
@@ -258,11 +258,13 @@ def upgrade(
         target = resolve_target_tag(tag)
         contract = resolve_release_contract(tag)
         report = status_against_latest_release(config.network_name)
+        expected_image = expected_image_from_examples(config.network_name)
     info(f"Deployment network: {config.network_name}")
     info(f"Current deployed version: {report.deployed_version}")
-    info(f"Target release version: {contract.version}")
-    if not report.upgrade_available and report.deployed_version == contract.version:
-        success("Already on the target version")
+    info(f"Latest release version: {contract.version}")
+    info(f"Target image from repo examples: {expected_image}")
+    if not report.upgrade_available:
+        success("Already on the expected image")
         return
 
     for secret in contract.required_secrets:
@@ -278,7 +280,7 @@ def upgrade(
                 error(finding.message)
 
     with step("Updating deployment image in config"):
-        config.image = target_image_for_network(config.network_name, contract.image_tag)
+        config.image = expected_image
         save_config(config_path, config)
     success(f"Updated config image to {config.image}")
     info("Run `mpc-infra plan` to review the upgrade, then `mpc-infra deploy` to apply it.")
