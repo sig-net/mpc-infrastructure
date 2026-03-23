@@ -1,10 +1,9 @@
 import json
 import shutil
 import subprocess
-from pathlib import Path
 
 from .constants import REQUIRED_BINARIES, REQUIRED_GCP_APIS
-from .models import PartnerMainnetConfig, ValidationFinding
+from .models import PartnerDeploymentConfig, ValidationFinding
 
 
 class GCloudError(RuntimeError):
@@ -25,7 +24,7 @@ def _run_text(cmd: list[str]) -> str:
     return proc.stdout.strip()
 
 
-def _secret_names(config: PartnerMainnetConfig) -> list[str]:
+def _secret_names(config: PartnerDeploymentConfig) -> list[str]:
     names: list[str] = []
     for node in config.nodes:
         names.extend(
@@ -42,14 +41,10 @@ def _secret_names(config: PartnerMainnetConfig) -> list[str]:
                 node.secrets.sol_rpc_ws,
             ]
         )
-        if node.secrets.hydration_rpc_ws:
-            names.append(node.secrets.hydration_rpc_ws)
-        if node.secrets.hydration_signer_uri:
-            names.append(node.secrets.hydration_signer_uri)
     return sorted(set(names))
 
 
-def validate_gcloud_environment(config: PartnerMainnetConfig) -> list[ValidationFinding]:
+def validate_gcloud_environment(config: PartnerDeploymentConfig) -> list[ValidationFinding]:
     findings: list[ValidationFinding] = []
 
     for binary in REQUIRED_BINARIES:
@@ -77,13 +72,7 @@ def validate_gcloud_environment(config: PartnerMainnetConfig) -> list[Validation
 
     try:
         enabled_services = _run_json([
-            "gcloud",
-            "services",
-            "list",
-            "--enabled",
-            "--project",
-            config.project_id,
-            "--format=json",
+            "gcloud", "services", "list", "--enabled", "--project", config.project_id, "--format=json",
         ])
         enabled_names = {svc["config"]["name"] for svc in enabled_services}
         for api in REQUIRED_GCP_APIS:
@@ -95,27 +84,13 @@ def validate_gcloud_environment(config: PartnerMainnetConfig) -> list[Validation
         findings.append(ValidationFinding(level="error", message=f"Unable to list enabled APIs: {exc}"))
 
     try:
-        _run_json([
-            "gcloud",
-            "storage",
-            "buckets",
-            "describe",
-            f"gs://{config.state_bucket}",
-            "--format=json",
-        ])
+        _run_json(["gcloud", "storage", "buckets", "describe", f"gs://{config.state_bucket}", "--format=json"])
         findings.append(ValidationFinding(level="info", message=f"Terraform state bucket found: gs://{config.state_bucket}"))
     except Exception as exc:
         findings.append(ValidationFinding(level="error", message=f"Terraform state bucket missing or inaccessible: gs://{config.state_bucket} ({exc})"))
 
     try:
-        secret_list = _run_json([
-            "gcloud",
-            "secrets",
-            "list",
-            "--project",
-            config.project_id,
-            "--format=json",
-        ])
+        secret_list = _run_json(["gcloud", "secrets", "list", "--project", config.project_id, "--format=json"])
         existing = {secret["name"].split("/")[-1] for secret in secret_list}
         for secret_name in _secret_names(config):
             if secret_name in existing:

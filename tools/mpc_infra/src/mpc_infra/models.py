@@ -3,6 +3,9 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
+NetworkName = Literal["mainnet", "testnet"]
+
+
 class SecretRefs(BaseModel):
     account_sk: str
     cipher_sk: str
@@ -20,13 +23,15 @@ class SecretRefs(BaseModel):
 
 class NodeConfig(BaseModel):
     account_id: str
-    domain: str
+    domain: str | None = None
+    local_address: str | None = None
     secrets: SecretRefs
 
 
-class PartnerMainnetConfig(BaseModel):
+class PartnerDeploymentConfig(BaseModel):
     version: Literal[1] = 1
-    profile: Literal["mainnet"] = "mainnet"
+    network_name: NetworkName = "mainnet"
+    profile: str
     project_id: str
     region: str = Field(default="europe-west1")
     zone: str = Field(default="europe-west1-b")
@@ -34,8 +39,8 @@ class PartnerMainnetConfig(BaseModel):
     subnetwork: str = Field(default="default")
     state_bucket: str
     image: str | None = None
-    eth_contract_address: str = Field(default="D39b0aBc0acab7d48aC6DFC9612543f035233b68")
-    sol_program_address: str = Field(default="SigMcRMjKfnC7RDG5q4yUMZM1s5KJ9oYTPP4NmJRDRw")
+    eth_contract_address: str
+    sol_program_address: str
     nodes: list[NodeConfig]
 
 
