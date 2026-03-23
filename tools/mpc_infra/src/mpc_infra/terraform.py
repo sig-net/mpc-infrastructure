@@ -43,6 +43,14 @@ def terraform_show_plan_json(workdir: Path, plan_file: Path) -> dict:
     return json.loads(result.stdout)
 
 
+def terraform_state_list(workdir: Path) -> list[str]:
+    result = subprocess.run(["terraform", "state", "list"], cwd=workdir, capture_output=True, text=True)
+    if result.returncode != 0:
+        # no state yet is fine for net-new deploys
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
 def terraform_apply_stream(workdir: Path, plan_file: Path):
     proc = subprocess.Popen(
         ["terraform", "apply", "-input=false", "-no-color", "-auto-approve", plan_file.name],
@@ -92,11 +100,12 @@ def plan_summary(network_name: NetworkName, var_file: Path) -> str:
     return summarize_plan(result.stdout)
 
 
-def planned_resource_addresses(network_name: NetworkName, var_file: Path) -> tuple[str, Path, list[str]]:
+def planned_resource_addresses(network_name: NetworkName, var_file: Path) -> tuple[str, Path, list[str], list[str]]:
     workdir = terraform_workdir(network_name)
     init_result = terraform_init(workdir)
     if init_result.returncode != 0:
         raise RuntimeError(init_result.stderr.strip() or init_result.stdout.strip() or "terraform init failed")
+    existing_addresses = terraform_state_list(workdir)
     plan_path = workdir / "generated.tfplan"
     result = terraform_plan(workdir, var_file, out_plan=plan_path)
     if result.returncode != 0:
@@ -107,4 +116,4 @@ def planned_resource_addresses(network_name: NetworkName, var_file: Path) -> tup
         actions = rc.get("change", {}).get("actions", [])
         if any(action in {"create", "update", "delete", "replace"} for action in actions):
             addresses.append(rc["address"])
-    return summarize_plan(result.stdout), plan_path, addresses
+    return summarize_plan(result.stdout), plan_path, existing_addresses, addresses

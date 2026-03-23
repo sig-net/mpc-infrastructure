@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 
 import typer
@@ -30,6 +31,26 @@ def _prompt_for_network() -> str:
         choices=["testnet", "mainnet"],
         default="testnet",
     )
+
+
+def _write_deploy_log(workdir: Path, lines: list[str]) -> Path:
+    log_dir = workdir / ".mpc-infra" / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    path = log_dir / f"deploy-{datetime.now().strftime('%Y%m%d-%H%M%S')}.log"
+    path.write_text("\n".join(lines) + "\n")
+    return path
+
+
+def _mark_failed_resource(resources: dict[str, dict[str, str]], detail: str) -> str | None:
+    running = [name for name, state in resources.items() if state["status"] == "running"]
+    target = running[-1] if running else None
+    if target is None:
+        pending = [name for name, state in resources.items() if state["status"] == "pending"]
+        target = pending[0] if pending else None
+    if target is not None:
+        resources[target]["status"] = "failed"
+        resources[target]["detail"] = detail
+    return target
 
 
 @app.command()
@@ -141,12 +162,18 @@ def deploy(path: Path | None = None) -> None:
     with step("Aligning Terraform backend bucket"):
         ensure_backend_bucket(workdir, config.state_bucket)
     with step("Preparing deployment plan"):
-        plan_text, plan_file, addresses = planned_resource_addresses(config.network_name, generated)
+        plan_text, plan_file, existing_addresses, planned_addresses = planned_resource_addresses(config.network_name, generated)
     info(plan_text)
 
-    resources = {address: {"status": "pending", "detail": "waiting"} for address in addresses}
+    resources: dict[str, dict[str, str]] = {
+        address: {"status": "complete", "detail": "already exists"} for address in existing_addresses
+    }
+    for address in planned_addresses:
+        resources[address] = {"status": "pending", "detail": "waiting"}
+
     apply_lines: list[str] = []
     exit_code = 0
+    failed_resource: str | None = None
     with resource_progress(resources) as refresh:
         for line in terraform_apply_stream(workdir, plan_file):
             if line.startswith("__EXIT_CODE__:"):
@@ -156,35 +183,38 @@ def deploy(path: Path | None = None) -> None:
             start_match = RESOURCE_START_RE.match(line)
             if start_match:
                 addr = start_match.group("addr")
-                if addr in resources:
-                    resources[addr]["status"] = "running"
-                    resources[addr]["detail"] = start_match.group("action").lower()
-                    refresh()
+                resources.setdefault(addr, {"status": "pending", "detail": "discovered during apply"})
+                resources[addr]["status"] = "running"
+                resources[addr]["detail"] = start_match.group("action").lower()
+                refresh()
                 continue
             done_match = RESOURCE_DONE_RE.match(line)
             if done_match:
                 addr = done_match.group("addr")
-                if addr in resources:
-                    resources[addr]["status"] = "complete"
-                    resources[addr]["detail"] = done_match.group("action")
-                    refresh()
+                resources.setdefault(addr, {"status": "pending", "detail": "discovered during apply"})
+                resources[addr]["status"] = "complete"
+                resources[addr]["detail"] = done_match.group("action")
+                refresh()
                 continue
             if line.startswith("Error:"):
-                for state in resources.values():
-                    if state["status"] == "running":
-                        state["status"] = "failed"
-                        state["detail"] = line
+                failed_resource = _mark_failed_resource(resources, line)
                 refresh()
+
+    log_path = _write_deploy_log(workdir, apply_lines)
 
     if exit_code != 0:
         error("Terraform apply failed")
-        for line in apply_lines[-20:]:
-            if line.startswith("Error:") or "error" in line.lower():
+        if failed_resource:
+            error(f"Failed resource: {failed_resource}")
+        error(f"Terraform log: {log_path}")
+        for line in apply_lines[-40:]:
+            if line.startswith("Error:") or line.startswith("with ") or line.startswith("on ") or "error" in line.lower():
                 error(line)
         raise typer.Exit(code=1)
 
     outputs = terraform_output_json(workdir)
     success(summarize_apply(apply_lines))
+    info(f"Terraform log: {log_path}")
     render_outputs_table(outputs)
     if config.network_name == "testnet" and "node_public_ip" in outputs:
         info(f"Testnet node endpoint(s): {outputs['node_public_ip']}")
