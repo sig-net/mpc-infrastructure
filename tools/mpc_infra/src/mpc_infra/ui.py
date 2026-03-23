@@ -2,6 +2,7 @@ from contextlib import contextmanager
 
 import questionary
 from rich.console import Console
+from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
 
@@ -57,3 +58,23 @@ def render_outputs_table(outputs: dict[str, object]) -> None:
     for key, value in outputs.items():
         table.add_row(key, str(value))
     console.print(table)
+
+
+def _resource_table(resources: dict[str, dict[str, str]]) -> Table:
+    table = Table(title="Deployment Resources", show_header=True, header_style="bold magenta")
+    table.add_column("Status", width=10)
+    table.add_column("Resource", style="cyan")
+    table.add_column("Detail", style="white")
+    order = {"pending": 0, "running": 1, "complete": 2, "failed": 3}
+    icon = {"pending": "…", "running": "▶", "complete": "✓", "failed": "✗"}
+    color = {"pending": "yellow", "running": "blue", "complete": "green", "failed": "red"}
+    for name, state in sorted(resources.items(), key=lambda item: (order.get(item[1]["status"], 9), item[0])):
+        status = state["status"]
+        table.add_row(f"[{color[status]}]{icon[status]} {status}[/{color[status]}]", name, state.get("detail", ""))
+    return table
+
+
+@contextmanager
+def resource_progress(resources: dict[str, dict[str, str]]):
+    with Live(_resource_table(resources), console=console, refresh_per_second=8) as live:
+        yield lambda: live.update(_resource_table(resources))

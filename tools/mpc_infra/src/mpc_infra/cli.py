@@ -6,8 +6,18 @@ from .config import build_interactive_starter, default_config_path, load_config,
 from .constants import DEFAULT_NETWORK_NAME, TERRAFORM_DIRS
 from .gcloud import create_secret_interactively
 from .render import write_generated_tfvars
-from .terraform import deploy_with_outputs, ensure_backend_bucket, plan_summary, terraform_workdir
-from .ui import banner, error, info, render_outputs_table, select, step, success, warn
+from .terraform import (
+    RESOURCE_DONE_RE,
+    RESOURCE_START_RE,
+    ensure_backend_bucket,
+    plan_summary,
+    planned_resource_addresses,
+    summarize_apply,
+    terraform_apply_stream,
+    terraform_output_json,
+    terraform_workdir,
+)
+from .ui import banner, error, info, render_outputs_table, resource_progress, select, step, success, warn
 from .upgrade import resolve_release_contract, resolve_target_tag, status_against_latest_release
 from .validate import validate_config_and_environment
 
@@ -28,7 +38,6 @@ def init(
     network_name: str | None = typer.Option(None, "--network", help="Deployment network: mainnet or testnet."),
     force: bool = False,
 ) -> None:
-    """Write a starter partner config file."""
     config_path = path or default_config_path()
     if config_path.exists() and not force:
         raise typer.BadParameter(f"Config already exists at {config_path}. Use --force to overwrite.")
@@ -41,7 +50,7 @@ def init(
 
     banner("mpc-infra init", f"Preparing a {selected_network} deployment config")
     project_id = typer.prompt("GCP project ID")
-    bucket_default = f"multichain-terraform-{project_id.replace('_', '-')}"
+    bucket_default = f"multichain-terraform-{project_id.replace('_', '-') }"
     state_bucket = typer.prompt("Terraform state bucket", default=bucket_default)
     account_placeholder = "company.near" if selected_network == "mainnet" else "company.testnet"
     account_id = typer.prompt("Node account ID", default=account_placeholder)
@@ -66,7 +75,6 @@ def init(
 
 @app.command()
 def validate(path: Path | None = None) -> None:
-    """Validate config and environment."""
     config_path = path or default_config_path()
     banner("mpc-infra validate", f"Checking {config_path}")
     with step("Loading deployment config"):
@@ -92,7 +100,6 @@ def validate(path: Path | None = None) -> None:
 
 @app.command()
 def plan(path: Path | None = None) -> None:
-    """Render generated tfvars, align backend bucket, and run terraform plan."""
     config_path = path or default_config_path()
     banner("mpc-infra plan", f"Planning from {config_path}")
     with step("Loading deployment config"):
@@ -111,7 +118,6 @@ def plan(path: Path | None = None) -> None:
 
 @app.command()
 def deploy(path: Path | None = None) -> None:
-    """Apply the deployment with a quiet step-based UI and show Terraform outputs."""
     config_path = path or default_config_path()
     banner("mpc-infra deploy", f"Deploying from {config_path}")
     with step("Loading deployment config"):
@@ -134,10 +140,51 @@ def deploy(path: Path | None = None) -> None:
         generated = write_generated_tfvars(config, workdir)
     with step("Aligning Terraform backend bucket"):
         ensure_backend_bucket(workdir, config.state_bucket)
-    with step("Applying infrastructure"):
-        summary, outputs = deploy_with_outputs(config.network_name, generated)
+    with step("Preparing deployment plan"):
+        plan_text, plan_file, addresses = planned_resource_addresses(config.network_name, generated)
+    info(plan_text)
 
-    success(summary)
+    resources = {address: {"status": "pending", "detail": "waiting"} for address in addresses}
+    apply_lines: list[str] = []
+    exit_code = 0
+    with resource_progress(resources) as refresh:
+        for line in terraform_apply_stream(workdir, plan_file):
+            if line.startswith("__EXIT_CODE__:"):
+                exit_code = int(line.split(":", 1)[1])
+                continue
+            apply_lines.append(line)
+            start_match = RESOURCE_START_RE.match(line)
+            if start_match:
+                addr = start_match.group("addr")
+                if addr in resources:
+                    resources[addr]["status"] = "running"
+                    resources[addr]["detail"] = start_match.group("action").lower()
+                    refresh()
+                continue
+            done_match = RESOURCE_DONE_RE.match(line)
+            if done_match:
+                addr = done_match.group("addr")
+                if addr in resources:
+                    resources[addr]["status"] = "complete"
+                    resources[addr]["detail"] = done_match.group("action")
+                    refresh()
+                continue
+            if line.startswith("Error:"):
+                for state in resources.values():
+                    if state["status"] == "running":
+                        state["status"] = "failed"
+                        state["detail"] = line
+                refresh()
+
+    if exit_code != 0:
+        error("Terraform apply failed")
+        for line in apply_lines[-20:]:
+            if line.startswith("Error:") or "error" in line.lower():
+                error(line)
+        raise typer.Exit(code=1)
+
+    outputs = terraform_output_json(workdir)
+    success(summarize_apply(apply_lines))
     render_outputs_table(outputs)
     if config.network_name == "testnet" and "node_public_ip" in outputs:
         info(f"Testnet node endpoint(s): {outputs['node_public_ip']}")
@@ -145,7 +192,6 @@ def deploy(path: Path | None = None) -> None:
 
 @app.command()
 def status() -> None:
-    """Show deployment/version posture against the latest release."""
     banner("mpc-infra status", "Checking deployment posture")
     with step("Resolving deployment posture"):
         report = status_against_latest_release()
@@ -164,7 +210,6 @@ def upgrade(
     tag: str | None = typer.Option(default=None, help="Explicit image tag override."),
     create_missing_secrets: bool = typer.Option(default=False, help="Guide the operator through creating missing secrets for the target release."),
 ) -> None:
-    """Resolve the target image tag and release contract for upgrades."""
     banner("mpc-infra upgrade", "Resolving target release")
     with step("Resolving target release metadata"):
         target = resolve_target_tag(tag)
