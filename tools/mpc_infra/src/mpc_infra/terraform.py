@@ -10,6 +10,7 @@ RESOURCE_START_RE = re.compile(r"^(?P<addr>[^:]+): (?P<action>Creating|Modifying
 RESOURCE_DONE_RE = re.compile(
     r"^(?P<addr>[^:]+): (?P<action>Creation complete|Modifications complete|Destruction complete)"
 )
+IMAGE_RE = re.compile(r'"image"\s*:\s*"(?P<image>[^"]+)"')
 
 
 def terraform_workdir(network_name: NetworkName) -> Path:
@@ -43,12 +44,38 @@ def terraform_show_plan_json(workdir: Path, plan_file: Path) -> dict:
     return json.loads(result.stdout)
 
 
+def terraform_state_pull(workdir: Path) -> dict | None:
+    result = subprocess.run(["terraform", "state", "pull"], cwd=workdir, capture_output=True, text=True)
+    if result.returncode != 0 or not result.stdout.strip():
+        return None
+    return json.loads(result.stdout)
+
+
 def terraform_state_list(workdir: Path) -> list[str]:
     result = subprocess.run(["terraform", "state", "list"], cwd=workdir, capture_output=True, text=True)
     if result.returncode != 0:
-        # no state yet is fine for net-new deploys
         return []
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def current_deployed_image(workdir: Path) -> str | None:
+    state = terraform_state_pull(workdir)
+    if not state:
+        return None
+    values = state.get("values", {})
+    root = values.get("root_module", {})
+    for child in root.get("child_modules", []):
+        for resource in child.get("resources", []):
+            values = resource.get("values", {})
+            metadata = values.get("metadata") or values.get("metadata_startup_script")
+            if isinstance(metadata, dict):
+                metadata_str = json.dumps(metadata)
+            else:
+                metadata_str = str(metadata or "")
+            match = IMAGE_RE.search(metadata_str)
+            if match:
+                return match.group("image")
+    return None
 
 
 def terraform_apply_stream(workdir: Path, plan_file: Path):

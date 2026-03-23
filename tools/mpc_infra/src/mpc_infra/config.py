@@ -84,3 +84,7 @@ def write_starter_config(path: Path, network_name: NetworkName = DEFAULT_NETWORK
 def load_config(path: Path) -> PartnerDeploymentConfig:
     data = yaml.safe_load(path.read_text())
     return PartnerDeploymentConfig.model_validate(data)
+
+
+def save_config(path: Path, config: PartnerDeploymentConfig) -> None:
+    path.write_text(yaml.safe_dump(config.model_dump(exclude_none=True), sort_keys=False))

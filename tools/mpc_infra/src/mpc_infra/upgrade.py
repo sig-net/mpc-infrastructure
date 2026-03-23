@@ -1,10 +1,21 @@
+import subprocess
+
+from .constants import MPC_RELEASE_REPO, PROFILE_DEFAULTS
 from .models import ReleaseContract, ReleaseSecretRequirement, StatusReport
+from .terraform import current_deployed_image, terraform_workdir
 
 
 def resolve_target_tag(explicit_tag: str | None = None) -> str:
     if explicit_tag:
         return explicit_tag
-    return "latest-release-resolution-not-implemented"
+    result = subprocess.run(
+        ["gh", "release", "view", "--repo", MPC_RELEASE_REPO, "--json", "tagName", "--jq", ".tagName"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "failed to resolve latest release tag")
+    return result.stdout.strip()
 
 
 def resolve_release_contract(explicit_tag: str | None = None) -> ReleaseContract:
@@ -22,14 +33,21 @@ def resolve_release_contract(explicit_tag: str | None = None) -> ReleaseContract
     )
 
 
-def status_against_latest_release() -> StatusReport:
+def target_image_for_network(network_name: str, tag: str) -> str:
+    repository = PROFILE_DEFAULTS[network_name]["image_repository"]
+    return f"{repository}:{tag}"
+
+
+def status_against_latest_release(network_name: str = "testnet") -> StatusReport:
     latest = resolve_release_contract()
-    deployed_version = "deployed-version-not-implemented"
+    deployed_image = current_deployed_image(terraform_workdir(network_name))
+    deployed_version = deployed_image.rsplit(":", 1)[-1] if deployed_image else "unknown"
     missing = [secret.secret_name_suggestion for secret in latest.required_secrets]
+    upgrade_available = deployed_version != latest.version
     return StatusReport(
         deployed_version=deployed_version,
         latest_version=latest.version,
-        upgrade_available=deployed_version != latest.version,
+        upgrade_available=upgrade_available,
         missing_secrets=missing,
-        recommended_action="Run mpc-infra upgrade" if deployed_version != latest.version else "Up to date",
+        recommended_action="Run mpc-infra upgrade" if upgrade_available else "Up to date",
     )

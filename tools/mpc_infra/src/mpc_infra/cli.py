@@ -3,7 +3,7 @@ from pathlib import Path
 
 import typer
 
-from .config import build_interactive_starter, default_config_path, load_config, write_starter_config
+from .config import build_interactive_starter, default_config_path, load_config, save_config, write_starter_config
 from .constants import DEFAULT_NETWORK_NAME, TERRAFORM_DIRS
 from .gcloud import create_secret_interactively
 from .render import write_generated_tfvars
@@ -19,7 +19,12 @@ from .terraform import (
     terraform_workdir,
 )
 from .ui import banner, error, info, render_outputs_table, resource_progress, select, step, success, warn
-from .upgrade import resolve_release_contract, resolve_target_tag, status_against_latest_release
+from .upgrade import (
+    resolve_release_contract,
+    resolve_target_tag,
+    status_against_latest_release,
+    target_image_for_network,
+)
 from .validate import validate_config_and_environment
 
 app = typer.Typer(help="Partner deployment wrapper for MPC infrastructure.")
@@ -221,10 +226,14 @@ def deploy(path: Path | None = None) -> None:
 
 
 @app.command()
-def status() -> None:
+def status(path: Path | None = None) -> None:
+    config_path = path or default_config_path()
     banner("mpc-infra status", "Checking deployment posture")
+    with step("Loading deployment config"):
+        config = load_config(config_path)
     with step("Resolving deployment posture"):
-        report = status_against_latest_release()
+        report = status_against_latest_release(config.network_name)
+    info(f"Deployment network: {config.network_name}")
     info(f"Deployed version: {report.deployed_version}")
     info(f"Latest release: {report.latest_version}")
     info(f"Upgrade available: {report.upgrade_available}")
@@ -237,23 +246,39 @@ def status() -> None:
 
 @app.command()
 def upgrade(
+    path: Path | None = None,
     tag: str | None = typer.Option(default=None, help="Explicit image tag override."),
     create_missing_secrets: bool = typer.Option(default=False, help="Guide the operator through creating missing secrets for the target release."),
 ) -> None:
+    config_path = path or default_config_path()
     banner("mpc-infra upgrade", "Resolving target release")
+    with step("Loading deployment config"):
+        config = load_config(config_path)
     with step("Resolving target release metadata"):
         target = resolve_target_tag(tag)
         contract = resolve_release_contract(tag)
-    info(f"Target upgrade tag: {target}")
-    info(f"Target release contract version: {contract.version}")
+        report = status_against_latest_release(config.network_name)
+    info(f"Deployment network: {config.network_name}")
+    info(f"Current deployed version: {report.deployed_version}")
+    info(f"Target release version: {contract.version}")
+    if not report.upgrade_available and report.deployed_version == contract.version:
+        success("Already on the target version")
+        return
+
     for secret in contract.required_secrets:
         info(f"Required secret: {secret.key} -> suggested name {secret.secret_name_suggestion}")
         if create_missing_secrets:
             with step(f"Handling secret {secret.secret_name_suggestion}"):
-                finding = create_secret_interactively(project_id="<project-from-config>", secret_name=secret.secret_name_suggestion, description=secret.description)
+                finding = create_secret_interactively(project_id=config.project_id, secret_name=secret.secret_name_suggestion, description=secret.description)
             if finding.level == "info":
                 info(finding.message)
             elif finding.level == "warning":
                 warn(finding.message)
             else:
                 error(finding.message)
+
+    with step("Updating deployment image in config"):
+        config.image = target_image_for_network(config.network_name, contract.image_tag)
+        save_config(config_path, config)
+    success(f"Updated config image to {config.image}")
+    info("Run `mpc-infra plan` to review the upgrade, then `mpc-infra deploy` to apply it.")
