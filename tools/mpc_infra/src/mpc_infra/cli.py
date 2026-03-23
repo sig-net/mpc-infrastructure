@@ -6,7 +6,7 @@ from .config import default_config_path, load_config, write_starter_config
 from .constants import TERRAFORM_PARTNER_MAINNET_DIR
 from .gcloud import create_secret_interactively
 from .render import write_generated_tfvars
-from .terraform import deploy_summary, plan_summary
+from .terraform import ensure_backend_bucket, plan_summary
 from .upgrade import resolve_release_contract, resolve_target_tag, status_against_latest_release
 from .validate import validate_config_and_environment
 
@@ -14,9 +14,11 @@ app = typer.Typer(help="Partner deployment wrapper for MPC infrastructure.")
 
 
 @app.command()
-def init(path: Path | None = None) -> None:
+def init(path: Path | None = None, force: bool = False) -> None:
     """Write a starter partner config file."""
     config_path = path or default_config_path()
+    if config_path.exists() and not force:
+        raise typer.BadParameter(f"Config already exists at {config_path}. Use --force to overwrite.")
     write_starter_config(config_path)
     typer.echo(f"Wrote starter config to {config_path}")
 
@@ -26,20 +28,24 @@ def validate(path: Path | None = None) -> None:
     """Validate config and environment."""
     config_path = path or default_config_path()
     config = load_config(config_path)
-    report = validate_config_and_environment(config.project_id)
+    report = validate_config_and_environment(config)
     typer.echo(f"Validation ok: {report.ok}")
     for finding in report.findings:
         typer.echo(f"[{finding.level}] {finding.message}")
+    if not report.ok:
+        raise typer.Exit(code=1)
 
 
 @app.command()
 def plan(path: Path | None = None) -> None:
-    """Render generated tfvars and summarize the Terraform plan path."""
+    """Render generated tfvars, align backend bucket, and run terraform plan."""
     config_path = path or default_config_path()
     config = load_config(config_path)
     generated = write_generated_tfvars(config, TERRAFORM_PARTNER_MAINNET_DIR)
+    ensure_backend_bucket(TERRAFORM_PARTNER_MAINNET_DIR, config.state_bucket)
     typer.echo(f"Generated Terraform inputs: {generated}")
-    typer.echo(plan_summary())
+    summary = plan_summary(TERRAFORM_PARTNER_MAINNET_DIR)
+    typer.echo(summary)
 
 
 @app.command()
@@ -49,7 +55,7 @@ def deploy(path: Path | None = None) -> None:
     config = load_config(config_path)
     generated = write_generated_tfvars(config, TERRAFORM_PARTNER_MAINNET_DIR)
     typer.echo(f"Generated Terraform inputs: {generated}")
-    typer.echo(deploy_summary())
+    typer.echo("Terraform deploy integration is not implemented yet.")
 
 
 @app.command()

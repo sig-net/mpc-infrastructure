@@ -2,7 +2,17 @@ from pathlib import Path
 
 import yaml
 
-from .constants import CONFIG_FILENAME, DEFAULT_PROFILE, DEFAULT_REGION, DEFAULT_ZONE
+from .constants import (
+    CONFIG_FILENAME,
+    DEFAULT_ETH_CONTRACT_ADDRESS,
+    DEFAULT_IMAGE,
+    DEFAULT_NETWORK,
+    DEFAULT_PROFILE,
+    DEFAULT_REGION,
+    DEFAULT_SOL_PROGRAM_ADDRESS,
+    DEFAULT_SUBNETWORK,
+    DEFAULT_ZONE,
+)
 from .models import PartnerMainnetConfig
 
 
@@ -18,7 +28,12 @@ def write_starter_config(path: Path) -> None:
         "project_id": "<your-project-id>",
         "region": DEFAULT_REGION,
         "zone": DEFAULT_ZONE,
+        "network": DEFAULT_NETWORK,
+        "subnetwork": DEFAULT_SUBNETWORK,
         "state_bucket": "multichain-terraform-<your-entity-name>",
+        "image": DEFAULT_IMAGE,
+        "eth_contract_address": DEFAULT_ETH_CONTRACT_ADDRESS,
+        "sol_program_address": DEFAULT_SOL_PROGRAM_ADDRESS,
         "nodes": [
             {
                 "account_id": "company.near",
@@ -34,8 +49,6 @@ def write_starter_config(path: Path) -> None:
                     "sol_account_sk": "multichain-sol-account-sk-mainnet-0",
                     "sol_rpc_http": "multichain-sol-rpc-http-url-mainnet",
                     "sol_rpc_ws": "multichain-sol-rpc-ws-url-mainnet",
-                    "hydration_rpc_ws": "multichain-hydration-rpc-ws-url-mainnet",
-                    "hydration_signer_uri": "multichain-hydration-signer-uri-mainnet",
                 },
             }
         ],

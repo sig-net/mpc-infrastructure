@@ -21,8 +21,6 @@ def test_render_partner_mainnet_tfvars() -> None:
                     sol_account_sk="h",
                     sol_rpc_http="i",
                     sol_rpc_ws="j",
-                    hydration_rpc_ws="k",
-                    hydration_signer_uri="l",
                 ),
             )
         ],
@@ -30,5 +28,7 @@ def test_render_partner_mainnet_tfvars() -> None:
 
     rendered = render_partner_mainnet_tfvars(config)
     assert rendered["project_id"] == "partner-project"
+    assert rendered["network"] == "default"
     assert rendered["node_configs"][0]["account"] == "company.near"
-    assert rendered["node_configs"][0]["hydration_rpc_ws_url_secret_id"] == "k"
+    assert rendered["node_configs"][0]["eth_consensus_rpc_url_secret_id"] == "f"
+    assert "hydration_rpc_ws_url_secret_id" not in rendered["node_configs"][0]

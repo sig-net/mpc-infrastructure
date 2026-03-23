@@ -18,6 +18,22 @@ The wrapper should initially be additive:
 
 This is the safest way to start because it gives the team a concrete implementation path without immediately rewriting the infrastructure module.
 
+## Current implementation status on this branch
+
+The scaffold on this branch now has a first real pass for:
+
+- `init` — writes a partner-facing starter YAML config aligned to the current `terraform/partner-mainnet` shape
+- `validate` — validates config shape plus live GCP/tooling prerequisites such as binaries, project access, enabled APIs, state bucket, and required Secret Manager secret names
+- `plan` — renders generated Terraform inputs to `terraform/partner-mainnet/generated.auto.tfvars.json`, aligns the backend bucket in `resources.tf`, and runs `terraform plan`
+
+Still intentionally stubbed or partial:
+
+- `deploy`
+- `status`
+- `upgrade`
+- interactive secret creation
+- release manifest resolution
+
 ## Proposed repository additions
 
 ```text
@@ -169,9 +185,11 @@ Top-level:
 - schema version
 - profile (`mainnet`)
 - project/region/zone
+- network/subnetwork
 - state bucket
-- nodes list
 - optional image override
+- shared contract/program defaults
+- nodes list
 
 Per-node:
 
@@ -217,6 +235,7 @@ Contains Pydantic models for:
 - node config
 - secret references
 - validation result structures
+- status and release contract structures
 
 ### `config.py`
 
@@ -233,9 +252,10 @@ Centralizes:
 
 - default region and zone
 - required APIs
-- required secret keys
+- required binary names
 - Terraform working directory path
 - generated filename constants
+- default contract addresses and image
 
 ### `gcloud.py`
 
@@ -257,6 +277,7 @@ This is the most important translation layer.
 
 Thin wrapper for:
 
+- backend bucket alignment
 - init
 - plan
 - apply/deploy path

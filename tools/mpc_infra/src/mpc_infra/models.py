@@ -30,8 +30,12 @@ class PartnerMainnetConfig(BaseModel):
     project_id: str
     region: str = Field(default="europe-west1")
     zone: str = Field(default="europe-west1-b")
+    network: str = Field(default="default")
+    subnetwork: str = Field(default="default")
     state_bucket: str
     image: str | None = None
+    eth_contract_address: str = Field(default="D39b0aBc0acab7d48aC6DFC9612543f035233b68")
+    sol_program_address: str = Field(default="SigMcRMjKfnC7RDG5q4yUMZM1s5KJ9oYTPP4NmJRDRw")
     nodes: list[NodeConfig]
 
 
