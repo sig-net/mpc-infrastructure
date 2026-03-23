@@ -14,41 +14,58 @@ from .validate import validate_config_and_environment
 app = typer.Typer(help="Partner deployment wrapper for MPC infrastructure.")
 
 
+def _prompt_for_network() -> str:
+    typer.echo("Select deployment network:")
+    typer.echo("  1) testnet")
+    typer.echo("  2) mainnet")
+    while True:
+        choice = typer.prompt("Enter choice", default="1").strip().lower()
+        if choice in {"1", "testnet", "t"}:
+            return "testnet"
+        if choice in {"2", "mainnet", "m"}:
+            return "mainnet"
+        warn("Please choose 1/testnet or 2/mainnet.")
+
+
 @app.command()
 def init(
     path: Path | None = None,
-    network_name: str = typer.Option(DEFAULT_NETWORK_NAME, "--network", help="Deployment network: mainnet or testnet."),
+    network_name: str | None = typer.Option(None, "--network", help="Deployment network: mainnet or testnet."),
     force: bool = False,
 ) -> None:
     """Write a starter partner config file."""
     config_path = path or default_config_path()
     if config_path.exists() and not force:
         raise typer.BadParameter(f"Config already exists at {config_path}. Use --force to overwrite.")
-    if network_name not in TERRAFORM_DIRS:
+
+    selected_network = network_name
+    if selected_network is None:
+        selected_network = _prompt_for_network()
+    if selected_network not in TERRAFORM_DIRS:
         raise typer.BadParameter("--network must be one of: mainnet, testnet")
 
-    banner("mpc-infra init", f"Preparing a {network_name} deployment config")
+    banner("mpc-infra init", f"Preparing a {selected_network} deployment config")
     project_id = typer.prompt("GCP project ID")
     bucket_default = f"multichain-terraform-{project_id.replace('_', '-')}"
     state_bucket = typer.prompt("Terraform state bucket", default=bucket_default)
-    account_placeholder = "company.near" if network_name == "mainnet" else "company.testnet"
+    account_placeholder = "company.near" if selected_network == "mainnet" else "company.testnet"
     account_id = typer.prompt("Node account ID", default=account_placeholder)
     domain = None
-    if network_name == "mainnet":
+    if selected_network == "mainnet":
         domain = typer.prompt("Node domain (for example: mpc.company.com)")
 
     with step("Writing starter config"):
         starter = build_interactive_starter(
-            network_name=network_name,  # type: ignore[arg-type]
+            network_name=selected_network,  # type: ignore[arg-type]
             project_id=project_id,
             state_bucket=state_bucket,
             account_id=account_id,
             domain=domain,
         )
-        write_starter_config(config_path, network_name=network_name, starter=starter)  # type: ignore[arg-type]
+        write_starter_config(config_path, network_name=selected_network, starter=starter)  # type: ignore[arg-type]
 
     success(f"Wrote starter config to {config_path}")
-    info(f"Selected network: {network_name}")
+    info(f"Selected network: {selected_network}")
     warn("Review the generated secret names before running validate.")
 
 
