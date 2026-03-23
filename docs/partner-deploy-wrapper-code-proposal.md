@@ -139,6 +139,10 @@ Responsibilities:
 - detect current deployed image tag
 - resolve latest published release tag by default
 - support `--tag <tag>` override
+- compare current and target release contract metadata
+- detect newly required env/secret contract changes
+- prompt for missing secret values when needed
+- create missing secrets in GCP Secret Manager
 - write the updated image selection into generated inputs or config
 - run plan/deploy path
 - print post-upgrade verification steps
@@ -268,6 +272,9 @@ Handles:
 - current image detection
 - release resolution
 - target tag selection
+- release contract comparison
+- missing secret detection
+- guided secret creation planning
 - update planning
 
 ## Proposed implementation order
@@ -346,6 +353,7 @@ The proposed module layout keeps room for later additions such as:
 - richer status output
 - release channel support (`stable`, `candidate`)
 - migration helpers for config schema changes
+- richer release manifests that describe env/secret migrations for upgrades
 
 ## Recommendation
 

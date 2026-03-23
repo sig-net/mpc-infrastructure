@@ -258,6 +258,9 @@ Needs:
 
 - detect deployed/current image tag
 - resolve target tag
+- compare current and target release contract metadata
+- detect newly required env/secret requirements introduced by the target release
+- create missing GCP Secret Manager secrets interactively when needed
 - update config or generated Terraform input
 - run plan/deploy path
 - print verification guidance
@@ -281,6 +284,55 @@ mpc-infra upgrade --tag <tag>
 ```
 
 That is important for controlled partner support and incident handling.
+
+## Release contract metadata for upgrades
+
+To make upgrades safe, each release should publish machine-readable metadata that describes what a partner deployment must have before upgrading.
+
+Suggested fields:
+
+- release version
+- image tag
+- newly required env keys
+- newly required secret keys
+- suggested secret names
+- human-readable descriptions for prompts
+
+Example:
+
+```json
+{
+  "version": "v1.2.3",
+  "imageTag": "631a0b00085dfc167e115643f791e8eed2cac0cb",
+  "requiredSecrets": [
+    {
+      "key": "hydration_rpc_ws",
+      "secretNameSuggestion": "multichain-hydration-rpc-ws-url-mainnet",
+      "description": "Hydration RPC websocket URL"
+    },
+    {
+      "key": "hydration_signer_uri",
+      "secretNameSuggestion": "multichain-hydration-signer-uri-mainnet",
+      "description": "Hydration signer URI"
+    }
+  ]
+}
+```
+
+The wrapper should consume this metadata to detect missing requirements before the upgrade is allowed to continue.
+
+## Guided secret creation during upgrade
+
+If a target release introduces a new required secret and that secret is missing in the partner project, `mpc-infra upgrade` should:
+
+1. explain what changed in the target release
+2. suggest a default secret name
+3. prompt the operator for the secret value securely
+4. create the missing secret in GCP Secret Manager
+5. add the secret version
+6. validate that the secret exists before continuing
+
+This makes the upgrade workflow act like a migration assistant, not just an image bump helper.
 
 ## Packaging options
 

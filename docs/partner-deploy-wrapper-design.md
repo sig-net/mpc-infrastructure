@@ -160,7 +160,10 @@ This should fail early with human-readable messages.
 - detect the currently deployed image tag
 - resolve the target image tag from the latest published release by default
 - support an explicit target with `--tag <tag>`
+- compare the current release contract against the target release contract
+- detect any newly required environment variables or secrets introduced by the target release
 - tell the operator when no upgrade is needed
+- guide the operator through creating any missing GCP Secret Manager secrets before rollout
 - if an upgrade is needed, update the deployment input and safely restart/redeploy the node
 - print the resulting version and post-upgrade verification guidance
 

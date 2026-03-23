@@ -4,9 +4,10 @@ import typer
 
 from .config import default_config_path, load_config, write_starter_config
 from .constants import TERRAFORM_PARTNER_MAINNET_DIR
+from .gcloud import create_secret_interactively
 from .render import write_generated_tfvars
 from .terraform import deploy_summary, plan_summary
-from .upgrade import resolve_target_tag
+from .upgrade import resolve_release_contract, resolve_target_tag
 from .validate import validate_config_and_environment
 
 app = typer.Typer(help="Partner deployment wrapper for MPC infrastructure.")
@@ -58,10 +59,29 @@ def status() -> None:
 
 
 @app.command()
-def upgrade(tag: str | None = typer.Option(default=None, help="Explicit image tag override.")) -> None:
-    """Resolve the target image tag for upgrades."""
+def upgrade(
+    tag: str | None = typer.Option(default=None, help="Explicit image tag override."),
+    create_missing_secrets: bool = typer.Option(
+        default=False,
+        help="Guide the operator through creating missing secrets for the target release.",
+    ),
+) -> None:
+    """Resolve the target image tag and release contract for upgrades."""
     target = resolve_target_tag(tag)
+    contract = resolve_release_contract(tag)
     typer.echo(f"Target upgrade tag: {target}")
+    typer.echo(f"Target release contract version: {contract.version}")
+    for secret in contract.required_secrets:
+        typer.echo(
+            f"Required secret: {secret.key} -> suggested name {secret.secret_name_suggestion}"
+        )
+        if create_missing_secrets:
+            finding = create_secret_interactively(
+                project_id="<project-from-config>",
+                secret_name=secret.secret_name_suggestion,
+                description=secret.description,
+            )
+            typer.echo(f"[{finding.level}] {finding.message}")
 
 
 if __name__ == "__main__":

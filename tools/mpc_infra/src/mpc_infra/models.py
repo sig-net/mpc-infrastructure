@@ -35,6 +35,18 @@ class PartnerMainnetConfig(BaseModel):
     nodes: list[NodeConfig]
 
 
+class ReleaseSecretRequirement(BaseModel):
+    key: str
+    secret_name_suggestion: str
+    description: str
+
+
+class ReleaseContract(BaseModel):
+    version: str
+    image_tag: str
+    required_secrets: list[ReleaseSecretRequirement] = []
+
+
 class ValidationFinding(BaseModel):
     level: Literal["info", "warning", "error"]
     message: str
