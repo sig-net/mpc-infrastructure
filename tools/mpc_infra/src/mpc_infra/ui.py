@@ -37,12 +37,12 @@ def step(message: str):
 
 
 def select(message: str, choices: list[str], default: str | None = None) -> str:
-    selected = questionary.autocomplete(
+    selected = questionary.select(
         message,
         choices=choices,
         default=default,
-        match_middle=True,
-        validate=lambda value: True if value in choices else "Choose one of the listed options.",
+        use_indicator=True,
+        use_shortcuts=False,
     ).ask()
     if selected is None:
         raise KeyboardInterrupt
