@@ -15,8 +15,6 @@ def validate_config_and_environment(config: PartnerDeploymentConfig) -> Validati
             findings.append(ValidationFinding(level="error", message=f"Node {idx} account_id is empty."))
         if defaults["supports_domain"] and not (node.domain and node.domain.strip()):
             findings.append(ValidationFinding(level="error", message=f"Node {idx} domain is required for {config.network_name}."))
-        if not defaults["supports_domain"] and not (node.local_address and node.local_address.strip()):
-            findings.append(ValidationFinding(level="warning", message=f"Node {idx} local_address is recommended for {config.network_name}."))
         if defaults["supports_hydration"]:
             if not node.secrets.hydration_rpc_ws:
                 findings.append(ValidationFinding(level="error", message=f"Node {idx} hydration_rpc_ws is required for {config.network_name}."))
