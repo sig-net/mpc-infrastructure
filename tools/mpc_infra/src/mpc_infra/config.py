@@ -38,8 +38,6 @@ def _starter_for(network_name: NetworkName) -> dict:
     }
     if defaults["supports_domain"]:
         node["domain"] = "company.example.com"
-    else:
-        node["local_address"] = "http://<node-public-ip>:3000"
     if defaults["supports_hydration"]:
         node["secrets"]["hydration_rpc_ws"] = "wss://node.lark.hydration.cloud"
         node["secrets"]["hydration_signer_uri"] = "//Bob"
