@@ -1,3 +1,4 @@
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -30,11 +31,35 @@ def terraform_plan(workdir: Path, var_file: Path) -> subprocess.CompletedProcess
     )
 
 
+def terraform_apply(workdir: Path, var_file: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["terraform", "apply", "-input=false", "-no-color", "-auto-approve", f"-var-file={var_file.name}"],
+        cwd=workdir,
+        capture_output=True,
+        text=True,
+    )
+
+
+def terraform_output_json(workdir: Path) -> dict[str, object]:
+    result = subprocess.run(["terraform", "output", "-json"], cwd=workdir, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "terraform output failed")
+    raw = json.loads(result.stdout)
+    return {key: value.get("value") for key, value in raw.items()}
+
+
 def summarize_plan(stdout: str) -> str:
     for line in stdout.splitlines():
         if line.startswith("Plan:") or line.startswith("No changes."):
             return line.strip()
     return "Terraform plan completed; summary line not found."
+
+
+def summarize_apply(stdout: str) -> str:
+    for line in stdout.splitlines()[::-1]:
+        if line.startswith("Apply complete!") or line.startswith("No changes."):
+            return line.strip()
+    return "Terraform apply completed; summary line not found."
 
 
 def plan_summary(network_name: NetworkName, var_file: Path) -> str:
@@ -48,5 +73,13 @@ def plan_summary(network_name: NetworkName, var_file: Path) -> str:
     return summarize_plan(result.stdout)
 
 
-def deploy_summary() -> str:
-    return "Terraform deploy integration is not implemented yet."
+def deploy_with_outputs(network_name: NetworkName, var_file: Path) -> tuple[str, dict[str, object]]:
+    workdir = terraform_workdir(network_name)
+    init_result = terraform_init(workdir)
+    if init_result.returncode != 0:
+        raise RuntimeError(init_result.stderr.strip() or init_result.stdout.strip() or "terraform init failed")
+    result = terraform_apply(workdir, var_file)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "terraform apply failed")
+    outputs = terraform_output_json(workdir)
+    return summarize_apply(result.stdout), outputs

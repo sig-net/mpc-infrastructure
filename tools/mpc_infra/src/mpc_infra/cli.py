@@ -6,8 +6,8 @@ from .config import build_interactive_starter, default_config_path, load_config,
 from .constants import DEFAULT_NETWORK_NAME, TERRAFORM_DIRS
 from .gcloud import create_secret_interactively
 from .render import write_generated_tfvars
-from .terraform import ensure_backend_bucket, plan_summary, terraform_workdir
-from .ui import banner, error, info, select, step, success, warn
+from .terraform import deploy_with_outputs, ensure_backend_bucket, plan_summary, terraform_workdir
+from .ui import banner, error, info, render_outputs_table, select, step, success, warn
 from .upgrade import resolve_release_contract, resolve_target_tag, status_against_latest_release
 from .validate import validate_config_and_environment
 
@@ -111,13 +111,36 @@ def plan(path: Path | None = None) -> None:
 
 @app.command()
 def deploy(path: Path | None = None) -> None:
-    """Render generated tfvars and summarize the Terraform deploy path."""
+    """Apply the deployment with a quiet step-based UI and show Terraform outputs."""
     config_path = path or default_config_path()
-    config = load_config(config_path)
+    banner("mpc-infra deploy", f"Deploying from {config_path}")
+    with step("Loading deployment config"):
+        config = load_config(config_path)
+    with step("Validating config and environment"):
+        report = validate_config_and_environment(config)
+    if not report.ok:
+        for finding in report.findings:
+            if finding.level == "info":
+                info(finding.message)
+            elif finding.level == "warning":
+                warn(finding.message)
+            else:
+                error(finding.message)
+        error("Deployment blocked by validation errors")
+        raise typer.Exit(code=1)
+
     workdir = terraform_workdir(config.network_name)
-    generated = write_generated_tfvars(config, workdir)
-    info(f"Generated Terraform inputs: {generated}")
-    warn("Terraform deploy integration is not implemented yet.")
+    with step("Rendering generated Terraform inputs"):
+        generated = write_generated_tfvars(config, workdir)
+    with step("Aligning Terraform backend bucket"):
+        ensure_backend_bucket(workdir, config.state_bucket)
+    with step("Applying infrastructure"):
+        summary, outputs = deploy_with_outputs(config.network_name, generated)
+
+    success(summary)
+    render_outputs_table(outputs)
+    if config.network_name == "testnet" and "node_public_ip" in outputs:
+        info(f"Testnet node endpoint(s): {outputs['node_public_ip']}")
 
 
 @app.command()

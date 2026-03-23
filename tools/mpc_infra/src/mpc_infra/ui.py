@@ -3,6 +3,7 @@ from contextlib import contextmanager
 import questionary
 from rich.console import Console
 from rich.panel import Panel
+from rich.table import Table
 
 console = Console()
 
@@ -47,3 +48,12 @@ def select(message: str, choices: list[str], default: str | None = None) -> str:
     if selected is None:
         raise KeyboardInterrupt
     return selected
+
+
+def render_outputs_table(outputs: dict[str, object]) -> None:
+    table = Table(title="Terraform Outputs", show_header=True, header_style="bold magenta")
+    table.add_column("Name", style="cyan")
+    table.add_column("Value", style="white")
+    for key, value in outputs.items():
+        table.add_row(key, str(value))
+    console.print(table)
