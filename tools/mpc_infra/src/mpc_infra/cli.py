@@ -82,14 +82,14 @@ def _run_deploy_apply(config_path: Path) -> None:
     with step("Aligning Terraform backend bucket"):
         ensure_backend_bucket(workdir, config.state_bucket)
     with step("Preparing deployment plan"):
-        plan_text, plan_file, existing_addresses, planned_addresses = planned_resource_addresses(config.network_name, generated)
+        plan_text, plan_file, existing_addresses, planned_changes = planned_resource_addresses(config.network_name, generated)
     info(plan_text)
 
     resources: dict[str, dict[str, str]] = {
         address: {"status": "complete", "detail": "already exists"} for address in existing_addresses
     }
-    for address in planned_addresses:
-        resources[address] = {"status": "pending", "detail": "waiting"}
+    for change in planned_changes:
+        resources[change.address] = {"status": "pending", "detail": change.action}
 
     apply_lines: list[str] = []
     exit_code = 0
@@ -220,8 +220,15 @@ def plan(path: Path | None = None) -> None:
     info(f"Deployment network: {config.network_name}")
     info(f"Generated Terraform inputs: {generated}")
     with step("Running terraform plan"):
-        summary = plan_summary(config.network_name, generated)
+        summary, _plan_file, _existing_addresses, plan_changes = planned_resource_addresses(config.network_name, generated)
     success(summary)
+    if plan_changes:
+        info("Planned resource changes:")
+        for change in plan_changes:
+            detail = f"{change.action}: {change.address}"
+            if change.source_hint:
+                detail += f" (source: {change.source_hint})"
+            info(detail)
 
 
 @app.command()

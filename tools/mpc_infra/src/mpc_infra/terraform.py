@@ -1,6 +1,7 @@
 import json
 import re
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 
 from .constants import TERRAFORM_DIRS
@@ -11,6 +12,15 @@ RESOURCE_DONE_RE = re.compile(
     r"^(?P<addr>[^:]+): (?P<action>Creation complete|Modifications complete|Destruction complete)"
 )
 IMAGE_RE = re.compile(r'"image"\s*:\s*"(?P<image>[^"]+)"')
+MODULE_SEGMENT_RE = re.compile(r"^module\.([A-Za-z0-9_-]+)(?:\[.*\])?$")
+RESOURCE_SEGMENT_RE = re.compile(r"^(data\.)?([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)(?:\[.*\])?$")
+
+
+@dataclass
+class PlanChange:
+    address: str
+    action: str
+    source_hint: str | None = None
 
 
 def terraform_workdir(network_name: NetworkName) -> Path:
@@ -133,6 +143,104 @@ def summarize_apply(stdout_lines: list[str]) -> str:
     return "Terraform apply completed; summary line not found."
 
 
+def _action_label(actions: list[str]) -> str:
+    normalized = list(actions)
+    if normalized == ["create"]:
+        return "create"
+    if normalized == ["update"]:
+        return "update"
+    if normalized == ["delete"]:
+        return "delete"
+    if normalized == ["create", "delete"] or normalized == ["delete", "create"]:
+        return "replace"
+    return "/".join(normalized) or "unknown"
+
+
+def _find_block_line(path: Path, patterns: list[re.Pattern[str]]) -> str | None:
+    if not path.exists():
+        return None
+    for line_no, line in enumerate(path.read_text().splitlines(), start=1):
+        for pattern in patterns:
+            if pattern.search(line):
+                return f"{path.name}:{line_no}"
+    return None
+
+
+def _module_source_dir(workdir: Path, module_name: str) -> Path | None:
+    patterns = [re.compile(rf'^module\s+"{re.escape(module_name)}"\s*\{{')]
+    for tf_file in sorted(workdir.glob("*.tf")):
+        text = tf_file.read_text().splitlines()
+        for idx, line in enumerate(text, start=1):
+            if patterns[0].search(line):
+                for inner in text[idx: min(len(text), idx + 12)]:
+                    match = re.search(r'source\s*=\s*"([^"]+)"', inner)
+                    if match:
+                        return (workdir / match.group(1)).resolve()
+                return None
+    return None
+
+
+def source_hint_for_address(workdir: Path, address: str) -> str | None:
+    segments = address.split(".")
+    if not segments:
+        return None
+
+    if segments[0] == "module" and len(segments) >= 2:
+        module_segment = f"module.{segments[1]}"
+        module_match = MODULE_SEGMENT_RE.match(module_segment)
+        if not module_match:
+            return None
+        module_name = module_match.group(1)
+        top_level_hint = _find_block_line(workdir / "main.tf", [re.compile(rf'^module\s+"{re.escape(module_name)}"\s*\{{')])
+        source_dir = _module_source_dir(workdir, module_name)
+        remainder = ".".join(segments[2:])
+        if source_dir and remainder:
+            resource_match = RESOURCE_SEGMENT_RE.match(remainder)
+            if resource_match:
+                resource_type = resource_match.group(2)
+                resource_name = resource_match.group(3)
+                patterns = [
+                    re.compile(rf'^(resource|data)\s+"{re.escape(resource_type)}"\s+"{re.escape(resource_name)}"\s*\{{'),
+                    re.compile(rf'^output\s+"{re.escape(resource_name)}"\s*\{{'),
+                ]
+                for tf_file in sorted(source_dir.glob("*.tf")):
+                    hint = _find_block_line(tf_file, patterns)
+                    if hint:
+                        return f"{top_level_hint} -> {source_dir.name}/{hint}" if top_level_hint else f"{source_dir.name}/{hint}"
+        return top_level_hint
+
+    resource_match = RESOURCE_SEGMENT_RE.match(address)
+    if resource_match:
+        resource_type = resource_match.group(2)
+        resource_name = resource_match.group(3)
+        patterns = [
+            re.compile(rf'^(resource|data)\s+"{re.escape(resource_type)}"\s+"{re.escape(resource_name)}"\s*\{{'),
+            re.compile(rf'^output\s+"{re.escape(resource_name)}"\s*\{{'),
+        ]
+        for tf_file in sorted(workdir.glob("*.tf")):
+            hint = _find_block_line(tf_file, patterns)
+            if hint:
+                return hint
+    return None
+
+
+def plan_changes_summary(workdir: Path, plan_json: dict) -> list[PlanChange]:
+    changes: list[PlanChange] = []
+    for rc in plan_json.get("resource_changes", []):
+        actions = rc.get("change", {}).get("actions", [])
+        if not any(action in {"create", "update", "delete", "replace"} for action in actions):
+            continue
+        address = rc["address"]
+        changes.append(
+            PlanChange(
+                address=address,
+                action=_action_label(actions),
+                source_hint=source_hint_for_address(workdir, address),
+            )
+        )
+    return changes
+
+
 def plan_summary(network_name: NetworkName, var_file: Path) -> str:
     workdir = terraform_workdir(network_name)
     init_result = terraform_init(workdir)
@@ -144,7 +252,7 @@ def plan_summary(network_name: NetworkName, var_file: Path) -> str:
     return summarize_plan(result.stdout)
 
 
-def planned_resource_addresses(network_name: NetworkName, var_file: Path) -> tuple[str, Path, list[str], list[str]]:
+def planned_resource_addresses(network_name: NetworkName, var_file: Path) -> tuple[str, Path, list[str], list[PlanChange]]:
     workdir = terraform_workdir(network_name)
     init_result = terraform_init(workdir)
     if init_result.returncode != 0:
@@ -155,9 +263,4 @@ def planned_resource_addresses(network_name: NetworkName, var_file: Path) -> tup
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "terraform plan failed")
     plan_json = terraform_show_plan_json(workdir, plan_path)
-    addresses: list[str] = []
-    for rc in plan_json.get("resource_changes", []):
-        actions = rc.get("change", {}).get("actions", [])
-        if any(action in {"create", "update", "delete", "replace"} for action in actions):
-            addresses.append(rc["address"])
-    return summarize_plan(result.stdout), plan_path, existing_addresses, addresses
+    return summarize_plan(result.stdout), plan_path, existing_addresses, plan_changes_summary(workdir, plan_json)
