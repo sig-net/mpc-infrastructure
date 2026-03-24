@@ -85,20 +85,14 @@ def current_deployed_image(workdir: Path) -> str | None:
 
 
 def deployed_instance_names(workdir: Path) -> list[str]:
-    state = terraform_state_pull(workdir)
-    if not state:
+    try:
+        outputs = terraform_output_json(workdir)
+    except RuntimeError:
         return []
-    values = state.get("values", {})
-    root = values.get("root_module", {})
-    names: list[str] = []
-    for resource in _walk_resources(root):
-        if resource.get("type") != "google_compute_instance":
-            continue
-        resource_values = resource.get("values", {})
-        name = resource_values.get("name")
-        if isinstance(name, str) and name:
-            names.append(name)
-    return sorted(set(names))
+    raw = outputs.get("instance_names")
+    if not isinstance(raw, list):
+        return []
+    return [name for name in raw if isinstance(name, str) and name]
 
 
 def terraform_apply_stream(workdir: Path, plan_file: Path):

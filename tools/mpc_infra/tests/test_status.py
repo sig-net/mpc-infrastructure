@@ -27,30 +27,10 @@ def test_status_report_has_recommended_action(monkeypatch) -> None:
     assert report.recommended_action
 
 
-def test_deployed_instance_names_reads_compute_instances(monkeypatch) -> None:
+def test_deployed_instance_names_reads_outputs(monkeypatch) -> None:
     monkeypatch.setattr(
-        "mpc_infra.terraform.terraform_state_pull",
-        lambda workdir: {
-            "values": {
-                "root_module": {
-                    "resources": [],
-                    "child_modules": [
-                        {
-                            "resources": [
-                                {
-                                    "type": "google_compute_instance",
-                                    "values": {"name": "instance-a"},
-                                },
-                                {
-                                    "type": "google_compute_instance",
-                                    "values": {"name": "instance-b"},
-                                },
-                            ]
-                        }
-                    ],
-                }
-            }
-        },
+        "mpc_infra.terraform.terraform_output_json",
+        lambda workdir: {"instance_names": ["instance-a", "instance-b"]},
     )
     names = deployed_instance_names(Path("/tmp/testnet"))
     assert names == ["instance-a", "instance-b"]
