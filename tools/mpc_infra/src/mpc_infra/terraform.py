@@ -58,24 +58,47 @@ def terraform_state_list(workdir: Path) -> list[str]:
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
+def _walk_resources(module: dict) -> list[dict]:
+    resources = list(module.get("resources", []))
+    for child in module.get("child_modules", []):
+        resources.extend(_walk_resources(child))
+    return resources
+
+
 def current_deployed_image(workdir: Path) -> str | None:
     state = terraform_state_pull(workdir)
     if not state:
         return None
     values = state.get("values", {})
     root = values.get("root_module", {})
-    for child in root.get("child_modules", []):
-        for resource in child.get("resources", []):
-            values = resource.get("values", {})
-            metadata = values.get("metadata") or values.get("metadata_startup_script")
-            if isinstance(metadata, dict):
-                metadata_str = json.dumps(metadata)
-            else:
-                metadata_str = str(metadata or "")
-            match = IMAGE_RE.search(metadata_str)
-            if match:
-                return match.group("image")
+    for resource in _walk_resources(root):
+        values = resource.get("values", {})
+        metadata = values.get("metadata") or values.get("metadata_startup_script")
+        if isinstance(metadata, dict):
+            metadata_str = json.dumps(metadata)
+        else:
+            metadata_str = str(metadata or "")
+        match = IMAGE_RE.search(metadata_str)
+        if match:
+            return match.group("image")
     return None
+
+
+def deployed_instance_names(workdir: Path) -> list[str]:
+    state = terraform_state_pull(workdir)
+    if not state:
+        return []
+    values = state.get("values", {})
+    root = values.get("root_module", {})
+    names: list[str] = []
+    for resource in _walk_resources(root):
+        if resource.get("type") != "google_compute_instance":
+            continue
+        resource_values = resource.get("values", {})
+        name = resource_values.get("name")
+        if isinstance(name, str) and name:
+            names.append(name)
+    return sorted(set(names))
 
 
 def terraform_apply_stream(workdir: Path, plan_file: Path):

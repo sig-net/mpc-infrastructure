@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from mpc_infra.terraform import deployed_instance_names
 from mpc_infra.upgrade import status_against_latest_release
 
 
@@ -22,3 +25,32 @@ def test_status_report_has_recommended_action(monkeypatch) -> None:
     assert report.latest_github_version == "v1.2.3"
     assert report.target_image.endswith(":deadbeef")
     assert report.recommended_action
+
+
+def test_deployed_instance_names_reads_compute_instances(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "mpc_infra.terraform.terraform_state_pull",
+        lambda workdir: {
+            "values": {
+                "root_module": {
+                    "resources": [],
+                    "child_modules": [
+                        {
+                            "resources": [
+                                {
+                                    "type": "google_compute_instance",
+                                    "values": {"name": "instance-a"},
+                                },
+                                {
+                                    "type": "google_compute_instance",
+                                    "values": {"name": "instance-b"},
+                                },
+                            ]
+                        }
+                    ],
+                }
+            }
+        },
+    )
+    names = deployed_instance_names(Path("/tmp/testnet"))
+    assert names == ["instance-a", "instance-b"]

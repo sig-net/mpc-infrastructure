@@ -1,6 +1,8 @@
 import json
 import shutil
 import subprocess
+import tempfile
+from pathlib import Path
 
 from .constants import REQUIRED_BINARIES, REQUIRED_GCP_APIS
 from .models import PartnerDeploymentConfig, ValidationFinding
@@ -24,6 +26,12 @@ def _run_text(cmd: list[str]) -> str:
     return proc.stdout.strip()
 
 
+def _run(cmd: list[str]) -> None:
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise GCloudError(proc.stderr.strip() or proc.stdout.strip() or "command failed")
+
+
 def _secret_names(config: PartnerDeploymentConfig) -> list[str]:
     names: list[str] = []
     for node in config.nodes:
@@ -41,7 +49,74 @@ def _secret_names(config: PartnerDeploymentConfig) -> list[str]:
                 node.secrets.sol_rpc_ws,
             ]
         )
+        if node.secrets.hydration_rpc_ws:
+            names.append(node.secrets.hydration_rpc_ws)
+        if node.secrets.hydration_signer_uri:
+            names.append(node.secrets.hydration_signer_uri)
     return sorted(set(names))
+
+
+def list_secrets(project_id: str) -> set[str]:
+    secret_list = _run_json(["gcloud", "secrets", "list", "--project", project_id, "--format=json"])
+    return {secret["name"].split("/")[-1] for secret in secret_list}
+
+
+def secret_exists(project_id: str, secret_name: str) -> bool:
+    try:
+        _run_json(["gcloud", "secrets", "describe", secret_name, "--project", project_id, "--format=json"])
+        return True
+    except GCloudError:
+        return False
+
+
+def create_or_update_secret(project_id: str, secret_name: str, secret_value: str) -> str:
+    existed = secret_exists(project_id, secret_name)
+    with tempfile.NamedTemporaryFile("w", delete=False) as handle:
+        handle.write(secret_value)
+        temp_path = Path(handle.name)
+    try:
+        if not existed:
+            _run([
+                "gcloud",
+                "secrets",
+                "create",
+                secret_name,
+                "--project",
+                project_id,
+                "--replication-policy=automatic",
+                f"--data-file={temp_path}",
+            ])
+            return "created"
+        _run([
+            "gcloud",
+            "secrets",
+            "versions",
+            "add",
+            secret_name,
+            "--project",
+            project_id,
+            f"--data-file={temp_path}",
+        ])
+        return "updated"
+    finally:
+        temp_path.unlink(missing_ok=True)
+
+
+def update_instance_container_image(project_id: str, zone: str, instance_name: str, image: str) -> None:
+    _run([
+        "gcloud",
+        "compute",
+        "instances",
+        "update-container",
+        instance_name,
+        "--project",
+        project_id,
+        "--zone",
+        zone,
+        "--container-image",
+        image,
+        "--quiet",
+    ])
 
 
 def validate_gcloud_environment(config: PartnerDeploymentConfig) -> list[ValidationFinding]:
@@ -90,8 +165,7 @@ def validate_gcloud_environment(config: PartnerDeploymentConfig) -> list[Validat
         findings.append(ValidationFinding(level="error", message=f"Terraform state bucket missing or inaccessible: gs://{config.state_bucket} ({exc})"))
 
     try:
-        secret_list = _run_json(["gcloud", "secrets", "list", "--project", config.project_id, "--format=json"])
-        existing = {secret["name"].split("/")[-1] for secret in secret_list}
+        existing = list_secrets(config.project_id)
         for secret_name in _secret_names(config):
             if secret_name in existing:
                 findings.append(ValidationFinding(level="info", message=f"Secret found: {secret_name}"))
@@ -103,11 +177,15 @@ def validate_gcloud_environment(config: PartnerDeploymentConfig) -> list[Validat
     return findings
 
 
-def create_secret_interactively(project_id: str, secret_name: str, description: str) -> ValidationFinding:
-    return ValidationFinding(
-        level="info",
-        message=(
-            f"Secret creation flow for {secret_name} in project {project_id} is not implemented yet "
-            f"({description})."
-        ),
-    )
+def create_secret_interactively(project_id: str, secret_name: str, description: str, secret_value: str) -> ValidationFinding:
+    try:
+        action = create_or_update_secret(project_id=project_id, secret_name=secret_name, secret_value=secret_value)
+        return ValidationFinding(
+            level="info",
+            message=f"Secret {secret_name} uploaded in project {project_id} ({description}; {action}).",
+        )
+    except GCloudError as exc:
+        return ValidationFinding(
+            level="error",
+            message=f"Failed to upload secret {secret_name} in project {project_id}: {exc}",
+        )
