@@ -38,6 +38,8 @@ class PartnerDeploymentConfig(BaseModel):
     subnetwork: str = Field(default="default")
     state_bucket: str
     image: str | None = None
+    current_github_version: str | None = None
+    latest_github_version: str | None = None
     eth_contract_address: str
     sol_program_address: str
     nodes: list[NodeConfig]
@@ -58,6 +60,9 @@ class ReleaseContract(BaseModel):
 class StatusReport(BaseModel):
     deployed_version: str
     latest_version: str
+    current_github_version: str
+    latest_github_version: str
+    target_image: str
     upgrade_available: bool
     missing_secrets: list[str] = []
     recommended_action: str
