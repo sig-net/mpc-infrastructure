@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .constants import REQUIRED_BINARIES, REQUIRED_GCP_APIS
 from .models import PartnerDeploymentConfig, ValidationFinding
+from .render import rendered_secret_names
 
 
 class GCloudError(RuntimeError):
@@ -30,30 +31,6 @@ def _run(cmd: list[str]) -> None:
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0:
         raise GCloudError(proc.stderr.strip() or proc.stdout.strip() or "command failed")
-
-
-def _secret_names(config: PartnerDeploymentConfig) -> list[str]:
-    names: list[str] = []
-    for node in config.nodes:
-        names.extend(
-            [
-                node.secrets.account_sk,
-                node.secrets.cipher_sk,
-                node.secrets.sign_sk,
-                node.secrets.sk_share,
-                node.secrets.eth_account_sk,
-                node.secrets.eth_consensus_rpc,
-                node.secrets.eth_execution_rpc,
-                node.secrets.sol_account_sk,
-                node.secrets.sol_rpc_http,
-                node.secrets.sol_rpc_ws,
-            ]
-        )
-        if node.secrets.hydration_rpc_ws:
-            names.append(node.secrets.hydration_rpc_ws)
-        if node.secrets.hydration_signer_uri:
-            names.append(node.secrets.hydration_signer_uri)
-    return sorted(set(names))
 
 
 def list_secrets(project_id: str) -> set[str]:
@@ -166,7 +143,7 @@ def validate_gcloud_environment(config: PartnerDeploymentConfig) -> list[Validat
 
     try:
         existing = list_secrets(config.project_id)
-        for secret_name in _secret_names(config):
+        for secret_name in rendered_secret_names(config):
             if secret_name in existing:
                 findings.append(ValidationFinding(level="info", message=f"Secret found: {secret_name}"))
             else:

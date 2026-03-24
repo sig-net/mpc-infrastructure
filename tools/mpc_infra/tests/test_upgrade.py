@@ -90,7 +90,7 @@ nodes:
     missing = build_missing_secret_requirements(config, contract)
     assert len(missing) == 1
     assert missing[0].key == "hydration_rpc_ws"
-    assert missing[0].secret_name_suggestion == "hydration-ws-secret"
+    assert missing[0].secret_name_suggestion == "unused-hydration"
 
 
 def test_upgrade_readiness_reports_missing_secrets(monkeypatch, tmp_path: Path) -> None:

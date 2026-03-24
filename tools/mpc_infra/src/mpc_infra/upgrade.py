@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from .constants import MPC_RELEASE_REPO, PROFILE_DEFAULTS
 from .gcloud import list_secrets
 from .models import PartnerDeploymentConfig, ReleaseContract, ReleaseSecretRequirement, StatusReport
+from .render import render_partner_tfvars
 from .terraform import current_deployed_image, terraform_workdir
 
 
@@ -34,8 +35,6 @@ SECRET_FIELD_DESCRIPTIONS = {
     "sol_account_sk": "Solana account secret key",
     "sol_rpc_http": "Solana HTTP RPC URL",
     "sol_rpc_ws": "Solana WebSocket RPC URL",
-    "hydration_rpc_ws": "Hydration WebSocket RPC URL",
-    "hydration_signer_uri": "Hydration signer URI",
 }
 
 
@@ -100,10 +99,19 @@ def deployed_image_tag(image: str | None) -> str:
 
 
 def expected_secret_name(config: PartnerDeploymentConfig, key: str, node_index: int = 0) -> str | None:
-    if not config.nodes:
+    rendered = render_partner_tfvars(config)
+    node_configs = rendered.get("node_configs", [])
+    if not isinstance(node_configs, list) or node_index >= len(node_configs):
         return None
-    node = config.nodes[node_index]
-    return getattr(node.secrets, key, None)
+    node = node_configs[node_index]
+    if not isinstance(node, dict):
+        return None
+    for rendered_key, value in node.items():
+        if not rendered_key.endswith("_secret_id"):
+            continue
+        if key in rendered_key and isinstance(value, str):
+            return value
+    return None
 
 
 def build_missing_secret_requirements(config: PartnerDeploymentConfig, contract: ReleaseContract) -> list[ReleaseSecretRequirement]:

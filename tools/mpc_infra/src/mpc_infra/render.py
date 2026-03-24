@@ -44,6 +44,20 @@ def render_partner_tfvars(config: PartnerDeploymentConfig) -> dict:
     return rendered
 
 
+def rendered_secret_names(config: PartnerDeploymentConfig) -> list[str]:
+    rendered = render_partner_tfvars(config)
+    names: set[str] = set()
+    for node in rendered.get("node_configs", []):
+        if not isinstance(node, dict):
+            continue
+        for key, value in node.items():
+            if not key.endswith("_secret_id"):
+                continue
+            if isinstance(value, str) and value:
+                names.add(value)
+    return sorted(names)
+
+
 def write_generated_tfvars(config: PartnerDeploymentConfig, destination_dir: Path) -> Path:
     destination = destination_dir / GENERATED_TFVARS_FILENAME
     rendered = render_partner_tfvars(config)
