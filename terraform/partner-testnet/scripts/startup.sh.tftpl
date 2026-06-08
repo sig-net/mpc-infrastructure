@@ -6,7 +6,10 @@ exec > >(tee -a /var/log/mpc-startup.log | logger -t mpc-startup -s 2>/dev/conso
 echo "Starting multichain startup script"
 
 mkdir -p /var/redis
-mkdir -p /etc/mpc
+mkdir -p /etc/chain-signatures
+mkdir -p /var/lib/chain-signatures/config
+mkdir -p /var/lib/chain-signatures/state
+mkdir -p /var/log/chain-signatures
 
 systemctl start docker || true
 until systemctl is-active --quiet docker; do
@@ -15,10 +18,11 @@ until systemctl is-active --quiet docker; do
   systemctl start docker || true
 done
 
-cat >/etc/mpc/multichain.env <<'EOF'
-%{ for item in static_env ~}
+cat >/etc/chain-signatures/bootstrap.env <<'EOF'
+%{ for item in bootstrap_static_env ~}
 ${item.name}=${item.value}
 %{ endfor ~}
+PARTICIPANT_NAME=${participant_name}
 MPC_NODE_ID=${node_id}
 MPC_GCP_PROJECT_ID=${project_id}
 MPC_ACCOUNT_ID=${account_id}
@@ -38,9 +42,49 @@ MPC_ETH_CONTRACT_ADDRESS=${eth_contract_address}
 MPC_SOL_ACCOUNT_SK=${sol_account_sk}
 MPC_SOL_RPC_URL=${sol_rpc_url}
 MPC_SOL_PROGRAM_ADDRESS=${sol_program_address}
+MANIFEST_URL=${manifest_url}
+MANIFEST_CHANNEL=${manifest_channel}
+TRUSTED_MANIFEST_PUBKEY=/etc/chain-signatures/manifest.pub
+DOCKER_CONTAINER_NAME=multichain
+MANAGED_ENV_PATH=/var/lib/chain-signatures/config/managed.env
+APP_LAUNCH_SPEC_PATH=/var/lib/chain-signatures/config/app-container.json
+STATE_FILE_PATH=/var/lib/chain-signatures/state/agent-state.json
+POLL_INTERVAL_SECONDS=${poll_interval_seconds}
 EOF
 
-chmod 0600 /etc/mpc/multichain.env
+cat >/etc/chain-signatures/manifest.pub <<'EOF'
+${trusted_manifest_pubkey}
+EOF
+
+cat >/var/lib/chain-signatures/config/managed.env <<'EOF'
+%{ for key, value in managed_env ~}
+${key}=${value}
+%{ endfor ~}
+EOF
+
+cat >/var/lib/chain-signatures/config/app-container.json <<EOF
+{
+  "version": 1,
+  "name": "multichain",
+  "image": "${image}",
+  "command": [],
+  "env_files": [
+    "/etc/chain-signatures/bootstrap.env",
+    "/var/lib/chain-signatures/config/managed.env"
+  ],
+  "volumes": [
+    "/var/redis:/data",
+    "/var/lib/chain-signatures/state:/var/lib/chain-signatures/state"
+  ],
+  "ports": ["${image_port}:${image_port}"],
+  "restart_policy": "unless-stopped"
+}
+EOF
+
+chmod 0600 /etc/chain-signatures/bootstrap.env
+chmod 0644 /etc/chain-signatures/manifest.pub
+chmod 0600 /var/lib/chain-signatures/config/managed.env
+chmod 0644 /var/lib/chain-signatures/config/app-container.json
 
 docker rm -f multichain || true
 docker pull "${image}"
@@ -50,7 +94,23 @@ docker run -d \
   --restart unless-stopped \
   -p ${image_port}:${image_port} \
   -v /var/redis:/data \
-  --env-file /etc/mpc/multichain.env \
+  -v /var/lib/chain-signatures/state:/var/lib/chain-signatures/state \
+  --env-file /etc/chain-signatures/bootstrap.env \
+  --env-file /var/lib/chain-signatures/config/managed.env \
   "${image}"
+
+docker rm -f chain-signatures-operator || true
+docker pull "${operator_image}"
+
+docker run -d \
+  --name chain-signatures-operator \
+  --restart unless-stopped \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /etc/chain-signatures:/etc/chain-signatures:ro \
+  -v /var/lib/chain-signatures/config:/var/lib/chain-signatures/config \
+  -v /var/lib/chain-signatures/state:/var/lib/chain-signatures/state \
+  -v /var/log/chain-signatures:/var/log/chain-signatures \
+  "${operator_image}" \
+  cs-agent daemon --bootstrap /etc/chain-signatures/bootstrap.env
 
 echo "Startup script completed"

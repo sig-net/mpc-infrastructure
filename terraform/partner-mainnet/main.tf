@@ -65,29 +65,36 @@ module "ig_template" {
   machine_type = "n2d-standard-4"
 
   startup_script = templatefile("${path.module}/scripts/startup.sh.tftpl", {
-    image                        = var.image
-    image_port                   = var.image_port
-    static_env                   = var.static_env
-    node_id                      = count.index
-    project_id                   = var.project_id
-    account_id                   = var.node_configs[count.index].account
-    account_sk                   = data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
-    cipher_sk                    = data.google_secret_manager_secret_version.cipher_sk_secret_id[count.index].secret_data
-    sign_sk                      = data.google_secret_manager_secret_version.sign_sk_secret_id[count.index] != null ? data.google_secret_manager_secret_version.sign_sk_secret_id[count.index].secret_data : data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
-    aws_access_key_id            = "1"
-    aws_secret_access_key        = "1"
-    local_address                = "https://${var.node_configs[count.index].domain}"
-    sk_share_secret_id           = var.node_configs[count.index].sk_share_secret_id
-    env_name                     = var.env
-    redis_url                    = var.redis_url
-    eth_account_sk               = data.google_secret_manager_secret_version.eth_account_sk_secret_id[count.index].secret_data
-    eth_consensus_rpc_http_url   = data.google_secret_manager_secret_version.eth_consensus_rpc_url_secret_id[count.index].secret_data
-    eth_execution_rpc_http_url   = data.google_secret_manager_secret_version.eth_execution_rpc_url_secret_id[count.index].secret_data
-    eth_contract_address         = var.node_configs[count.index].eth_contract_address
-    sol_account_sk               = data.google_secret_manager_secret_version.sol_account_sk_secret_id[count.index].secret_data
-    sol_rpc_http_url             = data.google_secret_manager_secret_version.sol_rpc_http_url_secret_id[count.index].secret_data
-    sol_rpc_ws_url               = data.google_secret_manager_secret_version.sol_rpc_ws_url_secret_id[count.index].secret_data
-    sol_program_address          = var.node_configs[count.index].sol_program_address
+    image                      = var.image
+    operator_image             = var.operator_image
+    image_port                 = var.image_port
+    bootstrap_static_env       = [for item in var.static_env : item if !contains(["MPC_NEAR_RPC", "MPC_NEAR_RPC_API_KEY"], item.name)]
+    managed_env                = { for item in var.static_env : item.name => item.value if contains(["MPC_NEAR_RPC", "MPC_NEAR_RPC_API_KEY"], item.name) }
+    participant_name           = "multichain-${var.env}-partner-${count.index}"
+    node_id                    = count.index
+    project_id                 = var.project_id
+    manifest_url               = var.manifest_url
+    manifest_channel           = var.manifest_channel
+    trusted_manifest_pubkey    = var.trusted_manifest_pubkey
+    account_id                 = var.node_configs[count.index].account
+    account_sk                 = data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
+    cipher_sk                  = data.google_secret_manager_secret_version.cipher_sk_secret_id[count.index].secret_data
+    sign_sk                    = data.google_secret_manager_secret_version.sign_sk_secret_id[count.index] != null ? data.google_secret_manager_secret_version.sign_sk_secret_id[count.index].secret_data : data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
+    aws_access_key_id          = "1"
+    aws_secret_access_key      = "1"
+    local_address              = "https://${var.node_configs[count.index].domain}"
+    sk_share_secret_id         = var.node_configs[count.index].sk_share_secret_id
+    env_name                   = var.env
+    redis_url                  = var.redis_url
+    eth_account_sk             = data.google_secret_manager_secret_version.eth_account_sk_secret_id[count.index].secret_data
+    eth_consensus_rpc_http_url = data.google_secret_manager_secret_version.eth_consensus_rpc_url_secret_id[count.index].secret_data
+    eth_execution_rpc_http_url = data.google_secret_manager_secret_version.eth_execution_rpc_url_secret_id[count.index].secret_data
+    eth_contract_address       = var.node_configs[count.index].eth_contract_address
+    sol_account_sk             = data.google_secret_manager_secret_version.sol_account_sk_secret_id[count.index].secret_data
+    sol_rpc_http_url           = data.google_secret_manager_secret_version.sol_rpc_http_url_secret_id[count.index].secret_data
+    sol_rpc_ws_url             = data.google_secret_manager_secret_version.sol_rpc_ws_url_secret_id[count.index].secret_data
+    sol_program_address        = var.node_configs[count.index].sol_program_address
+    poll_interval_seconds      = var.poll_interval_seconds
   })
 
   source_image = var.source_image
