@@ -6,7 +6,7 @@ exec > >(tee -a /var/log/mpc-startup.log | logger -t mpc-startup -s 2>/dev/conso
 echo "Starting multichain startup script"
 
 mkdir -p /var/redis
-mkdir -p /etc/chain-signatures
+mkdir -p /var/lib/chain-signatures/bootstrap
 mkdir -p /var/lib/chain-signatures/config
 mkdir -p /var/lib/chain-signatures/state
 mkdir -p /var/log/chain-signatures
@@ -18,7 +18,7 @@ until systemctl is-active --quiet docker; do
   systemctl start docker || true
 done
 
-cat >/etc/chain-signatures/bootstrap.env <<'EOF'
+cat >/var/lib/chain-signatures/bootstrap/bootstrap.env <<'EOF'
 %{ for item in bootstrap_static_env ~}
 ${item.name}=${item.value}
 %{ endfor ~}
@@ -44,7 +44,7 @@ MPC_SOL_RPC_URL=${sol_rpc_url}
 MPC_SOL_PROGRAM_ADDRESS=${sol_program_address}
 MANIFEST_URL=${manifest_url}
 MANIFEST_CHANNEL=${manifest_channel}
-TRUSTED_MANIFEST_PUBKEY=/etc/chain-signatures/manifest.pub
+TRUSTED_MANIFEST_PUBKEY=/var/lib/chain-signatures/bootstrap/manifest.pub
 DOCKER_CONTAINER_NAME=multichain
 MANAGED_ENV_PATH=/var/lib/chain-signatures/config/managed.env
 APP_LAUNCH_SPEC_PATH=/var/lib/chain-signatures/config/app-container.json
@@ -52,7 +52,7 @@ STATE_FILE_PATH=/var/lib/chain-signatures/state/agent-state.json
 POLL_INTERVAL_SECONDS=${poll_interval_seconds}
 EOF
 
-cat >/etc/chain-signatures/manifest.pub <<'EOF'
+cat >/var/lib/chain-signatures/bootstrap/manifest.pub <<'EOF'
 ${trusted_manifest_pubkey}
 EOF
 
@@ -69,7 +69,7 @@ cat >/var/lib/chain-signatures/config/app-container.json <<EOF
   "image": "${image}",
   "command": [],
   "env_files": [
-    "/etc/chain-signatures/bootstrap.env",
+    "/var/lib/chain-signatures/bootstrap/bootstrap.env",
     "/var/lib/chain-signatures/config/managed.env"
   ],
   "volumes": [
@@ -81,8 +81,8 @@ cat >/var/lib/chain-signatures/config/app-container.json <<EOF
 }
 EOF
 
-chmod 0600 /etc/chain-signatures/bootstrap.env
-chmod 0644 /etc/chain-signatures/manifest.pub
+chmod 0600 /var/lib/chain-signatures/bootstrap/bootstrap.env
+chmod 0644 /var/lib/chain-signatures/bootstrap/manifest.pub
 chmod 0600 /var/lib/chain-signatures/config/managed.env
 chmod 0644 /var/lib/chain-signatures/config/app-container.json
 
@@ -95,7 +95,7 @@ docker run -d \
   -p ${image_port}:${image_port} \
   -v /var/redis:/data \
   -v /var/lib/chain-signatures/state:/var/lib/chain-signatures/state \
-  --env-file /etc/chain-signatures/bootstrap.env \
+  --env-file /var/lib/chain-signatures/bootstrap/bootstrap.env \
   --env-file /var/lib/chain-signatures/config/managed.env \
   "${image}"
 
@@ -106,11 +106,11 @@ docker run -d \
   --name chain-signatures-operator \
   --restart unless-stopped \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /etc/chain-signatures:/etc/chain-signatures:ro \
+  -v /var/lib/chain-signatures/bootstrap:/var/lib/chain-signatures/bootstrap:ro \
   -v /var/lib/chain-signatures/config:/var/lib/chain-signatures/config \
   -v /var/lib/chain-signatures/state:/var/lib/chain-signatures/state \
   -v /var/log/chain-signatures:/var/log/chain-signatures \
   "${operator_image}" \
-  cs-agent daemon --bootstrap /etc/chain-signatures/bootstrap.env
+  cs-agent daemon --bootstrap /var/lib/chain-signatures/bootstrap/bootstrap.env
 
 echo "Startup script completed"
