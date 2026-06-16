@@ -20,6 +20,33 @@ variable "image" {
   default     = "europe-west1-docker.pkg.dev/near-cs-testnet/multichain-public/multichain-testnet:latest"
 }
 
+variable "operator_image" {
+  description = "The chain-signatures operator image to run beside the multichain container"
+  type        = string
+}
+
+variable "manifest_url" {
+  description = "Signed release manifest URL consumed by the chain-signatures operator"
+  type        = string
+}
+
+variable "trusted_manifest_pubkey" {
+  description = "Ed25519 public key content used to verify the signed release manifest"
+  type        = string
+}
+
+variable "manifest_channel" {
+  description = "Release channel name to read from the signed manifest"
+  type        = string
+  default     = "testnet-stable"
+}
+
+variable "poll_interval_seconds" {
+  description = "Polling interval for the chain-signatures operator"
+  type        = number
+  default     = 300
+}
+
 variable "source_image" {
   type    = string
   default = "projects/cos-cloud/global/images/cos-stable-117-18613-75-37"
@@ -89,7 +116,7 @@ variable "node_configs" {
 
 variable "env" {
   type    = string
-  default = "dev"
+  default = "testnet"
 }
 
 variable "static_env" {

@@ -1,10 +1,13 @@
-env        = "testnet"
-project_id = "<your-project-id>"
-network    = "default"
-subnetwork = "default"
-image      = "europe-west1-docker.pkg.dev/near-cs-testnet/multichain-public/multichain-testnet:latest"
-region     = "europe-west1"
-zone       = "europe-west1-b"
+env                     = "testnet"
+project_id              = "<your-project-id>"
+network                 = "default"
+subnetwork              = "default"
+image                   = "europe-west1-docker.pkg.dev/near-cs-testnet/multichain-public/multichain-testnet:latest"
+operator_image          = "us-docker.pkg.dev/<your-project-id>/chain-signatures/chain-signatures-agent:<tag>"
+manifest_url            = "https://storage.googleapis.com/<your-bucket>/chain-signatures-testnet.json"
+trusted_manifest_pubkey = "<ed25519-public-key>"
+region                  = "europe-west1"
+zone                    = "europe-west1-b"
 # These will be specific to your node
 node_configs = [
   {
