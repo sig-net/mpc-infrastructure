@@ -96,6 +96,7 @@ variable "env_variables" {
 
 variable "node_configs" {
   type = list(object({
+    node_id                         = number
     account                         = string
     account_sk_secret_id            = string
     cipher_sk_secret_id             = string
@@ -112,6 +113,11 @@ variable "node_configs" {
     hydration_rpc_ws_url            = string
     hydration_signer_uri            = string
   }))
+
+  validation {
+    condition     = length(var.node_configs) == 1
+    error_message = "partner-testnet currently supports exactly one node config per deployment."
+  }
 }
 
 variable "env" {

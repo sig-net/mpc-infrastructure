@@ -5,14 +5,19 @@ provider "google-beta" {
   project = var.project_id
 }
 
+locals {
+  deployment_node = var.node_configs[0]
+  deployment_name = "multichain-${var.env}-${local.deployment_node.node_id}"
+}
+
 resource "google_compute_project_metadata_item" "project_logging" {
   key   = "google-logging-enabled"
   value = "true"
 }
 
 resource "google_service_account" "service_account" {
-  account_id   = "multichain-${var.env}"
-  display_name = "Multichain ${var.env} Account"
+  account_id   = local.deployment_name
+  display_name = "Multichain ${var.env} Node ${local.deployment_node.node_id}"
 }
 
 resource "google_project_iam_member" "sa-roles" {
@@ -30,7 +35,7 @@ resource "google_project_iam_member" "sa-roles" {
 
 resource "google_compute_global_address" "external_ips" {
   count        = length(var.node_configs)
-  name         = "multichain-dev-parnter-${count.index}"
+  name         = local.deployment_name
   address_type = "EXTERNAL"
 }
 
@@ -47,7 +52,7 @@ module "ig_template" {
     scopes = ["cloud-platform"]
   }
 
-  name_prefix  = "multichain-partner-${count.index}"
+  name_prefix  = "${local.deployment_name}-"
   machine_type = "n2d-standard-2"
 
   startup_script = templatefile("${path.module}/scripts/startup.sh.tftpl", {
@@ -56,8 +61,8 @@ module "ig_template" {
     image_port                 = var.image_port
     bootstrap_static_env       = [for item in var.static_env : item if !contains(["MPC_NEAR_RPC", "MPC_NEAR_RPC_API_KEY", "MPC_GCP_PROJECT_ID"], item.name)]
     managed_env                = { for item in var.static_env : item.name => item.value if contains(["MPC_NEAR_RPC", "MPC_NEAR_RPC_API_KEY"], item.name) }
-    participant_name           = "multichain-${var.env}-partner-${count.index}"
-    node_id                    = count.index
+    participant_name           = local.deployment_name
+    node_id                    = var.node_configs[count.index].node_id
     project_id                 = var.project_id
     manifest_url               = var.manifest_url
     manifest_channel           = var.manifest_channel
@@ -104,7 +109,7 @@ module "instances" {
   source     = "../modules/instance-from-tpl"
   region     = var.region
   project_id = var.project_id
-  hostname   = "multichain-testnet-partner-${count.index}"
+  hostname   = local.deployment_name
   network    = var.network
   subnetwork = var.subnetwork
 
@@ -113,7 +118,7 @@ module "instances" {
 }
 
 resource "google_compute_health_check" "multichain_healthcheck" {
-  name = "multichain-testnet-partner-healthcheck"
+  name = "${local.deployment_name}-healthcheck"
 
   http_health_check {
     port         = 3000
@@ -124,7 +129,7 @@ resource "google_compute_health_check" "multichain_healthcheck" {
 
 resource "google_compute_global_forwarding_rule" "default" {
   count                 = length(var.node_configs)
-  name                  = "multichain-partner-rule-${count.index}"
+  name                  = "${local.deployment_name}-rule"
   target                = google_compute_target_http_proxy.default[count.index].id
   port_range            = "80"
   load_balancing_scheme = "EXTERNAL"
@@ -133,19 +138,19 @@ resource "google_compute_global_forwarding_rule" "default" {
 
 resource "google_compute_target_http_proxy" "default" {
   count       = length(var.node_configs)
-  name        = "multichain-partner-target-proxy-${count.index}"
+  name        = "${local.deployment_name}-target-proxy"
   description = "a description"
   url_map     = google_compute_url_map.default[count.index].id
 }
 
 resource "google_compute_url_map" "default" {
   count           = length(var.node_configs)
-  name            = "multichain-partner-url-map-${count.index}"
+  name            = "${local.deployment_name}-url-map"
   default_service = google_compute_backend_service.multichain_backend.id
 }
 
 resource "google_compute_backend_service" "multichain_backend" {
-  name                  = "multichain-partner-backend-service"
+  name                  = "${local.deployment_name}-backend-service"
   load_balancing_scheme = "EXTERNAL"
 
   backend {
@@ -156,7 +161,7 @@ resource "google_compute_backend_service" "multichain_backend" {
 }
 
 resource "google_compute_instance_group" "multichain_group" {
-  name      = "multichain-partner-instance-group"
+  name      = "${local.deployment_name}-instance-group"
   instances = module.instances[*].self_links[0]
 
   zone = var.zone
@@ -167,7 +172,7 @@ resource "google_compute_instance_group" "multichain_group" {
 }
 
 resource "google_compute_firewall" "app_port" {
-  name    = "allow-multichain-healthcheck-access"
+  name    = "allow-${local.deployment_name}-healthcheck-access"
   network = var.network
 
   source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
