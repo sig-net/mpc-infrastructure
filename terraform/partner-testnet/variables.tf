@@ -149,7 +149,7 @@ variable "static_env" {
     },
     {
       name  = "MPC_GCP_PROJECT_ID"
-      value = "<your-project-id>"
+      value = "near-cs-testnet"
     },
     {
       name  = "MPC_WEB_PORT"

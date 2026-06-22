@@ -5,7 +5,7 @@ subnetwork              = "projects/sig-shared-network/regions/europe-west1/subn
 image                   = "europe-west1-docker.pkg.dev/near-cs-testnet/multichain-public/multichain-testnet:latest"
 operator_image          = "us-docker.pkg.dev/near-cs-testnet/chain-signatures/chain-signatures-agent:latest"
 manifest_url            = "https://storage.googleapis.com/chain-signatures-testnet/channels/testnet-stable/manifest.json"
-trusted_manifest_pubkey = "<ed25519-public-key>"
+trusted_manifest_pubkey = "KaVGVJVvFyYnTeDOcXjIY+IMXzCLXkElVjI8L0Aef9I="
 region                  = "europe-west1"
 zone                    = "europe-west1-b"
 
