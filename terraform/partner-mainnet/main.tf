@@ -64,38 +64,42 @@ module "ig_template" {
   machine_type = "n2d-standard-4"
 
   startup_script = templatefile("${path.module}/scripts/startup.sh.tftpl", {
-    image                      = var.image
-    operator_image             = var.operator_image
-    image_port                 = var.image_port
-    bootstrap_static_env       = [for item in var.static_env : item if !contains(["MPC_NEAR_RPC", "MPC_NEAR_RPC_API_KEY", "MPC_GCP_PROJECT_ID"], item.name)]
-    managed_env                = { for item in var.static_env : item.name => item.value if contains(["MPC_NEAR_RPC", "MPC_NEAR_RPC_API_KEY"], item.name) }
-    participant_name           = "multichain-${var.env}-partner-${count.index}"
-    node_id                    = count.index
-    project_id                 = var.project_id
-    manifest_url               = var.manifest_url
-    manifest_channel           = var.manifest_channel
-    trusted_manifest_pubkey    = var.trusted_manifest_pubkey
-    account_id                 = var.node_configs[count.index].account
-    account_sk                 = data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
-    cipher_sk                  = data.google_secret_manager_secret_version.cipher_sk_secret_id[count.index].secret_data
-    sign_sk                    = data.google_secret_manager_secret_version.sign_sk_secret_id[count.index] != null ? data.google_secret_manager_secret_version.sign_sk_secret_id[count.index].secret_data : data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
-    aws_access_key_id          = "1"
-    aws_secret_access_key      = "1"
-    local_address              = "https://${var.node_configs[count.index].domain}"
-    sk_share_secret_id         = var.node_configs[count.index].sk_share_secret_id
-    env_name                   = var.env
-    redis_url                  = var.redis_url
-    eth_account_sk             = data.google_secret_manager_secret_version.eth_account_sk_secret_id[count.index].secret_data
-    eth_consensus_rpc_http_url = data.google_secret_manager_secret_version.eth_consensus_rpc_url_secret_id[count.index].secret_data
-    eth_execution_rpc_http_url = data.google_secret_manager_secret_version.eth_execution_rpc_url_secret_id[count.index].secret_data
-    eth_contract_address       = var.node_configs[count.index].eth_contract_address
-    sol_account_sk             = data.google_secret_manager_secret_version.sol_account_sk_secret_id[count.index].secret_data
-    sol_rpc_http_url           = data.google_secret_manager_secret_version.sol_rpc_http_url_secret_id[count.index].secret_data
-    sol_rpc_ws_url             = data.google_secret_manager_secret_version.sol_rpc_ws_url_secret_id[count.index].secret_data
-    sol_program_address        = var.node_configs[count.index].sol_program_address
-    hydration_rpc_ws_url       = data.google_secret_manager_secret_version.hydration_rpc_ws_url_secret_id[count.index].secret_data
-    hydration_signer_uri       = data.google_secret_manager_secret_version.hydration_signer_uri_secret_id[count.index].secret_data
-    poll_interval_seconds      = var.poll_interval_seconds
+    image                = var.image
+    operator_image       = var.operator_image
+    image_port           = var.image_port
+    bootstrap_static_env = [for item in var.static_env : item if contains(["MPC_WEB_PORT"], item.name)]
+    managed_env = merge(
+      { for item in var.static_env : item.name => item.value if !contains(["MPC_WEB_PORT"], item.name) },
+      {
+        MPC_ACCOUNT_SK                 = data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
+        MPC_CIPHER_SK                  = data.google_secret_manager_secret_version.cipher_sk_secret_id[count.index].secret_data
+        MPC_SIGN_SK                    = data.google_secret_manager_secret_version.sign_sk_secret_id[count.index] != null ? data.google_secret_manager_secret_version.sign_sk_secret_id[count.index].secret_data : data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
+        AWS_ACCESS_KEY_ID              = "1"
+        AWS_SECRET_ACCESS_KEY          = "1"
+        MPC_SK_SHARE_SECRET_ID         = var.node_configs[count.index].sk_share_secret_id
+        MPC_REDIS_URL                  = var.redis_url
+        MPC_ETH_ACCOUNT_SK             = data.google_secret_manager_secret_version.eth_account_sk_secret_id[count.index].secret_data
+        MPC_ETH_CONSENSUS_RPC_HTTP_URL = data.google_secret_manager_secret_version.eth_consensus_rpc_url_secret_id[count.index].secret_data
+        MPC_ETH_EXECUTION_RPC_HTTP_URL = data.google_secret_manager_secret_version.eth_execution_rpc_url_secret_id[count.index].secret_data
+        MPC_ETH_CONTRACT_ADDRESS       = var.node_configs[count.index].eth_contract_address
+        MPC_SOL_ACCOUNT_SK             = data.google_secret_manager_secret_version.sol_account_sk_secret_id[count.index].secret_data
+        MPC_SOL_RPC_HTTP_URL           = data.google_secret_manager_secret_version.sol_rpc_http_url_secret_id[count.index].secret_data
+        MPC_SOL_RPC_WS_URL             = data.google_secret_manager_secret_version.sol_rpc_ws_url_secret_id[count.index].secret_data
+        MPC_SOL_PROGRAM_ADDRESS        = var.node_configs[count.index].sol_program_address
+        MPC_HYDRATION_RPC_WS_URL       = data.google_secret_manager_secret_version.hydration_rpc_ws_url_secret_id[count.index].secret_data
+        MPC_HYDRATION_SIGNER_URI       = data.google_secret_manager_secret_version.hydration_signer_uri_secret_id[count.index].secret_data
+      }
+    )
+    participant_name        = "multichain-${var.env}-partner-${count.index}"
+    node_id                 = count.index
+    project_id              = var.project_id
+    manifest_url            = var.manifest_url
+    manifest_channel        = var.manifest_channel
+    trusted_manifest_pubkey = var.trusted_manifest_pubkey
+    account_id              = var.node_configs[count.index].account
+    local_address           = "https://${var.node_configs[count.index].domain}"
+    env_name                = var.env
+    poll_interval_seconds   = var.poll_interval_seconds
   })
 
   source_image = var.source_image
