@@ -77,8 +77,8 @@ module "ig_template" {
         MPC_HYDRATION_SIGNER_URI       = var.node_configs[count.index].hydration_signer_uri
       }
     )
-    participant_name        = local.deployment_name
-    node_id                 = var.node_configs[count.index].node_id
+    participant_name        = "multichain-${var.env}-partner-${count.index}"
+    node_id                 = count.index
     project_id              = var.project_id
     manifest_url            = var.manifest_url
     manifest_channel        = var.manifest_channel
