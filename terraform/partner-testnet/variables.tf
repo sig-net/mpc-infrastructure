@@ -44,7 +44,7 @@ variable "manifest_channel" {
 variable "poll_interval_seconds" {
   description = "Polling interval for the chain-signatures operator"
   type        = number
-  default     = 300
+  default     = 30
 }
 
 variable "source_image" {

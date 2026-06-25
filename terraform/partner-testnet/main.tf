@@ -10,10 +10,10 @@ locals {
   deployment_name = "multichain-${var.env}-${local.deployment_node.node_id}"
 }
 
-resource "google_compute_project_metadata_item" "project_logging" {
-  key   = "google-logging-enabled"
-  value = "true"
-}
+# resource "google_compute_project_metadata_item" "project_logging" {
+#   key   = "google-logging-enabled"
+#   value = "true"
+# }
 
 resource "google_service_account" "service_account" {
   account_id   = local.deployment_name
@@ -175,16 +175,16 @@ resource "google_compute_instance_group" "multichain_group" {
   }
 }
 
-resource "google_compute_firewall" "app_port" {
-  name    = "allow-${local.deployment_name}-healthcheck-access"
-  network = var.network
+# resource "google_compute_firewall" "app_port" {
+#   name    = "allow-${local.deployment_name}-healthcheck-access"
+#   network = var.network
 
-  source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
-  source_tags   = ["multichain"]
+#   source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
+#   source_tags   = ["multichain"]
 
-  allow {
-    protocol = "tcp"
-    ports    = ["80", "3000"]
-  }
+#   allow {
+#     protocol = "tcp"
+#     ports    = ["80", "3000"]
+#   }
 
-}
+# }
