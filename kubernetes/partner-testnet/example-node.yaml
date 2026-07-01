@@ -47,9 +47,12 @@ data:
     MPC_GCP_PROJECT_ID=<your-project-id>
     MPC_ACCOUNT_ID=<your-near-account-id>
     MPC_WEB_PORT=3000
+    MPC_CIPHER_PK=<replace-me>
     MPC_ACCOUNT_SK=<inject-securely>
     MPC_CIPHER_SK=<inject-securely>
     MPC_SIGN_SK=<inject-securely>
+    AWS_ACCESS_KEY_ID=<inject-securely>
+    AWS_SECRET_ACCESS_KEY=<inject-securely>
     MPC_SK_SHARE_SECRET_ID=multichain-sk-share-testnet-0
     MPC_ETH_ACCOUNT_SK=<inject-securely>
     MPC_SOL_ACCOUNT_SK=<inject-securely>
@@ -219,11 +222,17 @@ spec:
               value: "0"
             - name: MPC_ACCOUNT_ID
               value: <your-near-account-id>
+            - name: MPC_CIPHER_PK
+              value: <replace-me>
             - name: MPC_ACCOUNT_SK
               value: <inject-securely>
             - name: MPC_CIPHER_SK
               value: <inject-securely>
             - name: MPC_SIGN_SK
+              value: <inject-securely>
+            - name: AWS_ACCESS_KEY_ID
+              value: <inject-securely>
+            - name: AWS_SECRET_ACCESS_KEY
               value: <inject-securely>
             - name: MPC_LOCAL_ADDRESS
               value: https://testnet.sig.network
