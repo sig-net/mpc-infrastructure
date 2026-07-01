@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chain-signatures-mainnet
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: multichain-mainnet
+  namespace: chain-signatures-mainnet
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: multichain-mainnet-0-config
+  namespace: chain-signatures-mainnet
+data:
+  PARTICIPANT_NAME: multichain-mainnet-0
+  MPC_NODE_ID: "0"
+  MPC_ENV: mainnet
+  MPC_ACCOUNT_ID: company.near
+  MPC_LOCAL_ADDRESS: http://multichain-mainnet-0.multichain-mainnet.chain-signatures-mainnet.svc.cluster.local:3000
+  MPC_NEAR_RPC: https://rpc.mainnet.fastnear.com
+  MPC_CONTRACT_ID: v1.sig-net.near
+  MPC_INDEXER_S3_BUCKET: near-lake-data-mainnet
+  MPC_INDEXER_S3_REGION: eu-central-1
+  AWS_DEFAULT_REGION: eu-central-1
+  MPC_WEB_PORT: "3000"
+  RUST_LOG: mpc_node=info
+  MPC_CLIENT_HEADER_REFERER: https://sig.network
+  MPC_ETH_CONTRACT_ADDRESS: D39b0aBc0acab7d48aC6DFC9612543f035233b68
+  MPC_SOL_PROGRAM_ADDRESS: SigMcRMjKfnC7RDG5q4yUMZM1s5KJ9oYTPP4NmJRDRw
+  MPC_REDIS_URL: redis://redis.chain-signatures-mainnet.svc.cluster.local:6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: multichain-mainnet
+  namespace: chain-signatures-mainnet
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: multichain
+    app.kubernetes.io/instance: multichain-mainnet
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: multichain-mainnet-http
+  namespace: chain-signatures-mainnet
+spec:
+  selector:
+    app.kubernetes.io/name: multichain
+    app.kubernetes.io/instance: multichain-mainnet
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: multichain-mainnet
+  namespace: chain-signatures-mainnet
+spec:
+  serviceName: multichain-mainnet
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: multichain
+      app.kubernetes.io/instance: multichain-mainnet
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: multichain
+        app.kubernetes.io/instance: multichain-mainnet
+    spec:
+      serviceAccountName: multichain-mainnet
+      containers:
+        - name: multichain
+          image: europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet@sha256:<replace-with-release-digest>
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: multichain-mainnet-0-config
+            - secretRef:
+                name: multichain-mainnet-0-secrets
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi

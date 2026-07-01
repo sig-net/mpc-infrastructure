@@ -4,6 +4,11 @@ This repository is the source of truth for the infrastructure currently used to 
 
 This README replaces the external Google Doc and is intended to be the tracked, versioned deployment guide for provisioning a brand new partner mainnet node using the Terraform and helper scripts in this repository.
 
+In addition to the VM-oriented Terraform flow, the repository now includes a
+top-level `kubernetes/` folder with generic Kubernetes manifest examples for
+operators who want to run multichain on an existing cluster without inheriting
+any specific CD system choice.
+
 ## What this repository covers
 
 This guide walks through:
@@ -41,6 +46,9 @@ Relevant paths in this repository:
 
 ```text
 key_scripts/generate_keys/
+kubernetes/
+kubernetes/partner-mainnet/
+kubernetes/partner-testnet/
 terraform/partner-mainnet/
 terraform/partner-mainnet/scripts/
 terraform/partner-mainnet/resources.tf
