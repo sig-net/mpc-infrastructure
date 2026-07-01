@@ -48,14 +48,14 @@ data:
     MPC_ACCOUNT_ID=company.near
     MPC_WEB_PORT=3000
     MPC_CIPHER_PK=<replace-me>
-    MPC_ACCOUNT_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-partner-account-sk-mainnet-0
-    MPC_CIPHER_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-partner-cipher-sk-mainnet-0
-    MPC_SIGN_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-partner-sign-sk-mainnet-0
-    AWS_ACCESS_KEY_ID=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-indexer-aws-access-key
-    AWS_SECRET_ACCESS_KEY=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-indexer-aws-secret-key
+    MPC_ACCOUNT_SK=<inject-securely>
+    MPC_CIPHER_SK=<inject-securely>
+    MPC_SIGN_SK=<inject-securely>
+    AWS_ACCESS_KEY_ID=<inject-securely>
+    AWS_SECRET_ACCESS_KEY=<inject-securely>
     MPC_SK_SHARE_SECRET_ID=multichain-partner-sk-share-mainnet-0
-    MPC_ETH_ACCOUNT_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-account-sk-mainnet-0
-    MPC_SOL_ACCOUNT_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-account-sk-mainnet
+    MPC_ETH_ACCOUNT_SK=<inject-securely>
+    MPC_SOL_ACCOUNT_SK=<inject-securely>
     MANIFEST_URL=https://storage.googleapis.com/chain-signatures-mainnet/channels/stable/manifest.json
     MANIFEST_CHANNEL=mainnet-stable
     MANIFEST_IMPLEMENTATION=k8s
@@ -211,15 +211,15 @@ spec:
             - name: MPC_CIPHER_PK
               value: <replace-me>
             - name: MPC_ACCOUNT_SK
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-partner-account-sk-mainnet-0
+              value: <inject-securely>
             - name: MPC_CIPHER_SK
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-partner-cipher-sk-mainnet-0
+              value: <inject-securely>
             - name: MPC_SIGN_SK
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-partner-sign-sk-mainnet-0
+              value: <inject-securely>
             - name: AWS_ACCESS_KEY_ID
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-indexer-aws-access-key
+              value: <inject-securely>
             - name: AWS_SECRET_ACCESS_KEY
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-indexer-aws-secret-key
+              value: <inject-securely>
             - name: MPC_LOCAL_ADDRESS
               value: https://mainnet.sig.network
             - name: MPC_SK_SHARE_SECRET_ID
@@ -229,19 +229,19 @@ spec:
             - name: MPC_REDIS_URL
               value: redis://redis.multichain-mainnet.svc.cluster.local
             - name: MPC_ETH_ACCOUNT_SK
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-account-sk-mainnet-0
+              value: <inject-securely>
             - name: MPC_ETH_CONTRACT_ADDRESS
               value: f8bdC0612361a1E49a8E01423d4C0cFc5dF4791A
             - name: MPC_ETH_EXECUTION_RPC_HTTP_URL
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-execution-rpc-url-mainnet
+              value: <inject-securely>
             - name: MPC_ETH_CONSENSUS_RPC_HTTP_URL
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-consensus-rpc-url-mainnet
+              value: <inject-securely>
             - name: MPC_SOL_ACCOUNT_SK
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-account-sk-mainnet
+              value: <inject-securely>
             - name: MPC_SOL_RPC_HTTP_URL
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-rpc-http-url-mainnet
+              value: <inject-securely>
             - name: MPC_SOL_RPC_WS_URL
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-rpc-ws-url-mainnet
+              value: <inject-securely>
             - name: MPC_SOL_PROGRAM_ADDRESS
               value: SigMcRMjKfnC7RDG5q4yUMZM1s5KJ9oYTPP4NmJRDRw
 ---

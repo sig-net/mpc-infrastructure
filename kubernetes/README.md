@@ -37,7 +37,7 @@ extra naming noise from this repo.
 
 - operators already have a Kubernetes cluster
 - operators already have a way to deliver container images to that cluster
-- operators can adapt the placeholder env values to their own secret delivery model
+- operators have a secure way to inject sensitive values into workloads
 - Redis is provided either in-cluster or as an external endpoint reachable from the workload
 
 ## What These Examples Do Not Assume
@@ -61,5 +61,5 @@ Most operators will need to adjust at least:
 - `MPC_LOCAL_ADDRESS`
 - `MPC_REDIS_URL`
 - manifest URL and trust root values
-- secret delivery or secret reference conventions
+- secret injection method for sensitive values
 - external service exposure for HTTP or peer traffic

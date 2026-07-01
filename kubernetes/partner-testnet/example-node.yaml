@@ -47,12 +47,12 @@ data:
     MPC_GCP_PROJECT_ID=<your-project-id>
     MPC_ACCOUNT_ID=<your-near-account-id>
     MPC_WEB_PORT=3000
-    MPC_ACCOUNT_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-account-sk-testnet-0
-    MPC_CIPHER_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-cipher-sk-testnet-0
-    MPC_SIGN_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sign-sk-testnet-0
+    MPC_ACCOUNT_SK=<inject-securely>
+    MPC_CIPHER_SK=<inject-securely>
+    MPC_SIGN_SK=<inject-securely>
     MPC_SK_SHARE_SECRET_ID=multichain-sk-share-testnet-0
-    MPC_ETH_ACCOUNT_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-account-sk-testnet-0
-    MPC_SOL_ACCOUNT_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-account-sk-testnet
+    MPC_ETH_ACCOUNT_SK=<inject-securely>
+    MPC_SOL_ACCOUNT_SK=<inject-securely>
     MANIFEST_URL=https://storage.googleapis.com/chain-signatures-testnet/channels/stable/manifest.json
     MANIFEST_CHANNEL=testnet-stable
     MANIFEST_IMPLEMENTATION=k8s
@@ -206,11 +206,11 @@ spec:
             - name: MPC_ACCOUNT_ID
               value: <your-near-account-id>
             - name: MPC_ACCOUNT_SK
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-account-sk-testnet-0
+              value: <inject-securely>
             - name: MPC_CIPHER_SK
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-cipher-sk-testnet-0
+              value: <inject-securely>
             - name: MPC_SIGN_SK
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sign-sk-testnet-0
+              value: <inject-securely>
             - name: MPC_LOCAL_ADDRESS
               value: https://testnet.sig.network
             - name: MPC_SK_SHARE_SECRET_ID
@@ -220,19 +220,19 @@ spec:
             - name: MPC_REDIS_URL
               value: redis://redis.multichain-testnet.svc.cluster.local
             - name: MPC_ETH_ACCOUNT_SK
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-account-sk-testnet-0
+              value: <inject-securely>
             - name: MPC_ETH_CONTRACT_ADDRESS
               value: 83458E8Bf8206131Fe5c05127007FA164c0948A2
             - name: MPC_ETH_EXECUTION_RPC_HTTP_URL
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-execution-rpc-url-testnet
+              value: <inject-securely>
             - name: MPC_ETH_CONSENSUS_RPC_HTTP_URL
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-consensus-rpc-url-testnet
+              value: <inject-securely>
             - name: MPC_SOL_ACCOUNT_SK
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-account-sk-testnet
+              value: <inject-securely>
             - name: MPC_SOL_RPC_HTTP_URL
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-rpc-http-url-testnet
+              value: <inject-securely>
             - name: MPC_SOL_RPC_WS_URL
-              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-rpc-ws-url-testnet
+              value: <inject-securely>
             - name: MPC_SOL_PROGRAM_ADDRESS
               value: SigTVbfRK9LsXWpSv9KgpabrQcFKr5hDdUwMhYsXyKg
             - name: MPC_HYDRATION_RPC_WS_URL
