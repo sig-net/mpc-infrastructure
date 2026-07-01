@@ -1,25 +1,25 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: chain-signatures-testnet
+  name: multichain-testnet
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: multichain-testnet
-  namespace: chain-signatures-testnet
+  namespace: multichain-testnet
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: multichain-testnet-0-config
-  namespace: chain-signatures-testnet
+  name: multichain-testnet-config
+  namespace: multichain-testnet
 data:
   PARTICIPANT_NAME: multichain-testnet-0
   MPC_NODE_ID: "0"
   MPC_ENV: testnet
   MPC_ACCOUNT_ID: <your-near-account-id>
-  MPC_LOCAL_ADDRESS: http://multichain-testnet-0.multichain-testnet.chain-signatures-testnet.svc.cluster.local:3000
+  MPC_LOCAL_ADDRESS: http://multichain-testnet-0.multichain-testnet.multichain-testnet.svc.cluster.local:3000
   MPC_NEAR_RPC: https://rpc.testnet.fastnear.com
   MPC_CONTRACT_ID: v1.sig-net.testnet
   MPC_INDEXER_S3_BUCKET: near-lake-data-testnet
@@ -31,13 +31,32 @@ data:
   MPC_SOL_PROGRAM_ADDRESS: SigTVbfRK9LsXWpSv9KgpabrQcFKr5hDdUwMhYsXyKg
   MPC_HYDRATION_RPC_WS_URL: wss://node.lark.hydration.cloud
   MPC_HYDRATION_SIGNER_URI: //Bob
-  MPC_REDIS_URL: redis://redis.chain-signatures-testnet.svc.cluster.local:6379
+  MPC_REDIS_URL: redis://redis.multichain-testnet.svc.cluster.local:6379
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: multichain-testnet-operator-config
+  namespace: multichain-testnet
+data:
+  bootstrap.env: |
+    PARTICIPANT_NAME=multichain-testnet-0
+    MPC_NODE_ID=0
+    MPC_LOCAL_ADDRESS=http://multichain-testnet-0.multichain-testnet.multichain-testnet.svc.cluster.local:3000
+    MPC_ENV=testnet
+    MPC_GCP_PROJECT_ID=<your-project-id>
+    MANIFEST_URL=https://storage.googleapis.com/chain-signatures-testnet/channels/stable/manifest.json
+    MANIFEST_CHANNEL=testnet-stable
+    MANIFEST_IMPLEMENTATION=k8s
+    TRUSTED_MANIFEST_PUBKEY=<ed25519-public-key>
+    DOCKER_CONTAINER_NAME=multichain
+    POLL_INTERVAL_SECONDS=300
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: multichain-testnet
-  namespace: chain-signatures-testnet
+  namespace: multichain-testnet
 spec:
   clusterIP: None
   selector:
@@ -52,7 +71,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: multichain-testnet-http
-  namespace: chain-signatures-testnet
+  namespace: multichain-testnet
 spec:
   selector:
     app.kubernetes.io/name: multichain
@@ -66,7 +85,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: multichain-testnet
-  namespace: chain-signatures-testnet
+  namespace: multichain-testnet
 spec:
   serviceName: multichain-testnet
   replicas: 1
@@ -90,9 +109,9 @@ spec:
               containerPort: 3000
           envFrom:
             - configMapRef:
-                name: multichain-testnet-0-config
+                name: multichain-testnet-config
             - secretRef:
-                name: multichain-testnet-0-secrets
+                name: multichain-testnet-secrets
           resources:
             requests:
               cpu: "1"
@@ -100,3 +119,38 @@ spec:
             limits:
               cpu: "2"
               memory: 4Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multichain-testnet-operator
+  namespace: multichain-testnet
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: chain-signatures-operator
+      app.kubernetes.io/instance: multichain-testnet
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: chain-signatures-operator
+        app.kubernetes.io/instance: multichain-testnet
+    spec:
+      serviceAccountName: multichain-testnet
+      containers:
+        - name: chain-signatures-operator
+          image: europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/chain-signatures-agent@sha256:<replace-with-release-digest>
+          args:
+            - cs-agent
+            - daemon
+            - --bootstrap
+            - /config/bootstrap.env
+          volumeMounts:
+            - name: operator-config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: operator-config
+          configMap:
+            name: multichain-testnet-operator-config

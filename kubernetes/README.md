@@ -27,12 +27,16 @@ they already use:
 
 Each environment folder contains:
 
-- `example-node.yaml`: namespace, service account, services, config map, and stateful workload
+- `example-node.yaml`: namespace, service account, services, config maps, multichain workload, and operator outline
 - `secret.example.yaml`: placeholder secret values that should be replaced by the operator's secret workflow
 
 The example workload uses a single-replica `StatefulSet` with a headless
 `Service` so the node gets a stable DNS identity that can be wired into
 `MPC_LOCAL_ADDRESS`.
+
+The resource names are intentionally kept short around the pattern
+`multichain-<environment>` so operators can templatize them without carrying
+extra naming noise from this repo.
 
 ## What These Examples Assume
 
@@ -46,11 +50,15 @@ The example workload uses a single-replica `StatefulSet` with a headless
 - any particular GitOps or CD tool
 - any specific ingress controller or load balancer product
 - any specific secret manager integration
-- use of the VM-side `chain-signatures-operator`
 
 These examples pin the multichain workload image directly in the pod spec. If
 an operator later wants to layer in signed manifest promotion for Kubernetes,
 they can keep the same resource shape and swap only the image/env delivery path.
+
+Each example also includes a scaled-to-zero operator `Deployment` showing the
+intended Kubernetes-side manifest wiring. It is intentionally not active yet,
+because the current released `chain-signatures-operator` still reconciles only
+the VM implementation today.
 
 ## Adapting The Examples
 
@@ -62,6 +70,7 @@ Most operators will need to adjust at least:
 - resource requests and limits
 - `MPC_LOCAL_ADDRESS`
 - `MPC_REDIS_URL`
+- manifest URL and trust root values
 - secret delivery
 - external service exposure for HTTP or peer traffic
 
