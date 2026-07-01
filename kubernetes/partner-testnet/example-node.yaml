@@ -6,119 +6,239 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: multichain-testnet
+  name: k8s-sa
   namespace: multichain-testnet
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: multichain-testnet-operator
+  namespace: multichain-testnet
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: multichain-testnet-operator
+  namespace: multichain-testnet
+subjects:
+  - kind: ServiceAccount
+    name: k8s-sa
+    namespace: multichain-testnet
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: multichain-testnet-operator
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: multichain-testnet-config
-  namespace: multichain-testnet
-data:
-  PARTICIPANT_NAME: multichain-testnet-0
-  MPC_NODE_ID: "0"
-  MPC_ENV: testnet
-  MPC_ACCOUNT_ID: <your-near-account-id>
-  MPC_LOCAL_ADDRESS: http://multichain-testnet-0.multichain-testnet.multichain-testnet.svc.cluster.local:3000
-  MPC_NEAR_RPC: https://rpc.testnet.fastnear.com
-  MPC_CONTRACT_ID: v1.sig-net.testnet
-  MPC_INDEXER_S3_BUCKET: near-lake-data-testnet
-  MPC_INDEXER_S3_REGION: eu-central-1
-  AWS_DEFAULT_REGION: eu-central-1
-  MPC_WEB_PORT: "3000"
-  RUST_LOG: mpc_node=debug
-  MPC_ETH_CONTRACT_ADDRESS: 83458E8Bf8206131Fe5c05127007FA164c0948A2
-  MPC_SOL_PROGRAM_ADDRESS: SigTVbfRK9LsXWpSv9KgpabrQcFKr5hDdUwMhYsXyKg
-  MPC_HYDRATION_RPC_WS_URL: wss://node.lark.hydration.cloud
-  MPC_HYDRATION_SIGNER_URI: //Bob
-  MPC_REDIS_URL: redis://redis.multichain-testnet.svc.cluster.local:6379
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: multichain-testnet-operator-config
+  name: multichain-testnet-operator-bootstrap
   namespace: multichain-testnet
 data:
   bootstrap.env: |
     PARTICIPANT_NAME=multichain-testnet-0
     MPC_NODE_ID=0
-    MPC_LOCAL_ADDRESS=http://multichain-testnet-0.multichain-testnet.multichain-testnet.svc.cluster.local:3000
+    MPC_LOCAL_ADDRESS=https://testnet.sig.network
     MPC_ENV=testnet
     MPC_GCP_PROJECT_ID=<your-project-id>
+    MPC_ACCOUNT_ID=<your-near-account-id>
+    MPC_WEB_PORT=3000
+    MPC_ACCOUNT_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-account-sk-testnet-0
+    MPC_CIPHER_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-cipher-sk-testnet-0
+    MPC_SIGN_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sign-sk-testnet-0
+    MPC_SK_SHARE_SECRET_ID=multichain-sk-share-testnet-0
+    MPC_ETH_ACCOUNT_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-account-sk-testnet-0
+    MPC_SOL_ACCOUNT_SK=gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-account-sk-testnet
     MANIFEST_URL=https://storage.googleapis.com/chain-signatures-testnet/channels/stable/manifest.json
     MANIFEST_CHANNEL=testnet-stable
     MANIFEST_IMPLEMENTATION=k8s
     TRUSTED_MANIFEST_PUBKEY=<ed25519-public-key>
     DOCKER_CONTAINER_NAME=multichain
+    K8S_NAMESPACE=multichain-testnet
+    K8S_WORKLOAD_KIND=Deployment
+    K8S_WORKLOAD_NAME=multichain-testnet
+    K8S_CONTAINER_NAME=multichain-testnet
     POLL_INTERVAL_SECONDS=300
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: multichain-testnet
+  name: redis
   namespace: multichain-testnet
 spec:
-  clusterIP: None
+  type: ClusterIP
   selector:
-    app.kubernetes.io/name: multichain
-    app.kubernetes.io/instance: multichain-testnet
+    app: redis
   ports:
-    - name: http
-      port: 3000
-      targetPort: http
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: multichain-testnet-http
-  namespace: multichain-testnet
-spec:
-  selector:
-    app.kubernetes.io/name: multichain
-    app.kubernetes.io/instance: multichain-testnet
-  ports:
-    - name: http
-      port: 3000
-      targetPort: http
+    - name: redis
+      protocol: TCP
+      port: 6379
+      targetPort: 6379
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: multichain-testnet
+  name: redis-master
   namespace: multichain-testnet
 spec:
-  serviceName: multichain-testnet
+  serviceName: redis
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: multichain
-      app.kubernetes.io/instance: multichain-testnet
+      role: master
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: multichain
-        app.kubernetes.io/instance: multichain-testnet
+        role: master
+        app: redis
     spec:
-      serviceAccountName: multichain-testnet
       containers:
-        - name: multichain
+        - name: redis-master
+          image: redis:7.4.2
+          ports:
+            - containerPort: 6379
+            - containerPort: 16379
+          volumeMounts:
+            - mountPath: /data
+              name: redis-storage
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-slave
+  namespace: multichain-testnet
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      role: slave
+  template:
+    metadata:
+      labels:
+        role: slave
+    spec:
+      containers:
+        - name: redis-slave
+          image: redis:7.4.2
+          ports:
+            - containerPort: 6379
+            - containerPort: 16379
+          command:
+            - redis-server
+            - --replicaof
+            - redis.multichain-testnet.svc.cluster.local
+            - "6379"
+            - --slave-read-only
+            - "no"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: multichain-testnet
+  namespace: multichain-testnet
+spec:
+  type: NodePort
+  selector:
+    app: multichain-testnet
+  ports:
+    - name: http
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multichain-testnet
+  namespace: multichain-testnet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multichain-testnet
+  template:
+    metadata:
+      labels:
+        app: multichain-testnet
+    spec:
+      serviceAccountName: k8s-sa
+      containers:
+        - name: multichain-testnet
           image: europe-west1-docker.pkg.dev/near-cs-testnet/multichain-public/multichain-testnet@sha256:<replace-with-release-digest>
           imagePullPolicy: IfNotPresent
-          ports:
-            - name: http
-              containerPort: 3000
-          envFrom:
-            - configMapRef:
-                name: multichain-testnet-config
-            - secretRef:
-                name: multichain-testnet-secrets
           resources:
-            requests:
-              cpu: "1"
-              memory: 2Gi
             limits:
-              cpu: "2"
-              memory: 4Gi
+              cpu: 1000m
+              memory: 3000Mi
+          ports:
+            - containerPort: 3000
+          env:
+            - name: MPC_NEAR_RPC
+              value: https://rpc.testnet.fastnear.com
+            - name: MPC_CONTRACT_ID
+              value: v1.sig-net.testnet
+            - name: MPC_INDEXER_S3_BUCKET
+              value: near-lake-data-testnet
+            - name: AWS_DEFAULT_REGION
+              value: eu-central-1
+            - name: MPC_GCP_PROJECT_ID
+              value: <your-project-id>
+            - name: MPC_WEB_PORT
+              value: "3000"
+            - name: RUST_LOG
+              value: mpc_node=debug
+            - name: MPC_INDEXER_S3_REGION
+              value: eu-central-1
+            - name: MPC_NODE_ID
+              value: "0"
+            - name: MPC_ACCOUNT_ID
+              value: <your-near-account-id>
+            - name: MPC_ACCOUNT_SK
+              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-account-sk-testnet-0
+            - name: MPC_CIPHER_SK
+              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-cipher-sk-testnet-0
+            - name: MPC_SIGN_SK
+              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sign-sk-testnet-0
+            - name: MPC_LOCAL_ADDRESS
+              value: https://testnet.sig.network
+            - name: MPC_SK_SHARE_SECRET_ID
+              value: multichain-sk-share-testnet-0
+            - name: MPC_ENV
+              value: testnet
+            - name: MPC_REDIS_URL
+              value: redis://redis.multichain-testnet.svc.cluster.local
+            - name: MPC_ETH_ACCOUNT_SK
+              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-account-sk-testnet-0
+            - name: MPC_ETH_CONTRACT_ADDRESS
+              value: 83458E8Bf8206131Fe5c05127007FA164c0948A2
+            - name: MPC_ETH_EXECUTION_RPC_HTTP_URL
+              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-execution-rpc-url-testnet
+            - name: MPC_ETH_CONSENSUS_RPC_HTTP_URL
+              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-eth-consensus-rpc-url-testnet
+            - name: MPC_SOL_ACCOUNT_SK
+              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-account-sk-testnet
+            - name: MPC_SOL_RPC_HTTP_URL
+              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-rpc-http-url-testnet
+            - name: MPC_SOL_RPC_WS_URL
+              value: gcp:secretmanager:projects/<your-project-id>/secrets/multichain-sol-rpc-ws-url-testnet
+            - name: MPC_SOL_PROGRAM_ADDRESS
+              value: SigTVbfRK9LsXWpSv9KgpabrQcFKr5hDdUwMhYsXyKg
+            - name: MPC_HYDRATION_RPC_WS_URL
+              value: wss://node.lark.hydration.cloud
+            - name: MPC_HYDRATION_SIGNER_URI
+              value: //Bob
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -129,15 +249,13 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: chain-signatures-operator
-      app.kubernetes.io/instance: multichain-testnet
+      app: multichain-testnet-operator
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: chain-signatures-operator
-        app.kubernetes.io/instance: multichain-testnet
+        app: multichain-testnet-operator
     spec:
-      serviceAccountName: multichain-testnet
+      serviceAccountName: k8s-sa
       containers:
         - name: chain-signatures-operator
           image: europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/chain-signatures-agent@sha256:<replace-with-release-digest>
@@ -147,10 +265,10 @@ spec:
             - --bootstrap
             - /config/bootstrap.env
           volumeMounts:
-            - name: operator-config
+            - name: operator-bootstrap
               mountPath: /config
               readOnly: true
       volumes:
-        - name: operator-config
+        - name: operator-bootstrap
           configMap:
-            name: multichain-testnet-operator-config
+            name: multichain-testnet-operator-bootstrap

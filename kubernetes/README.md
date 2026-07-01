@@ -16,9 +16,9 @@ they already use:
 
 - keep the example repo-native and easy to audit
 - avoid assuming Flux, Argo CD, Helm, or any other specific controller
-- separate non-secret environment from secret material
 - show one-node examples that operators can duplicate or templatize for larger fleets
 - stay compatible with digest-pinned image promotion managed outside this repo
+- mirror the current mainnet workload split closely enough that operators can reason from the live shape
 
 ## Layout
 
@@ -27,12 +27,7 @@ they already use:
 
 Each environment folder contains:
 
-- `example-node.yaml`: namespace, service account, services, config maps, multichain workload, and operator deployment
-- `secret.example.yaml`: placeholder secret values that should be replaced by the operator's secret workflow
-
-The example workload uses a single-replica `StatefulSet` with a headless
-`Service` so the node gets a stable DNS identity that can be wired into
-`MPC_LOCAL_ADDRESS`.
+- `example-node.yaml`: namespace, service account, RBAC, Redis, multichain workload, and operator deployment
 
 The resource names are intentionally kept short around the pattern
 `multichain-<environment>` so operators can templatize them without carrying
@@ -42,7 +37,7 @@ extra naming noise from this repo.
 
 - operators already have a Kubernetes cluster
 - operators already have a way to deliver container images to that cluster
-- operators can supply secret values through Kubernetes Secrets or their own secret sync mechanism
+- operators can adapt the placeholder env values to their own secret delivery model
 - Redis is provided either in-cluster or as an external endpoint reachable from the workload
 
 ## What These Examples Do Not Assume
@@ -61,13 +56,10 @@ Most operators will need to adjust at least:
 
 - namespace names
 - image digests
-- service account annotations
+- service account annotations or identity bindings
 - resource requests and limits
 - `MPC_LOCAL_ADDRESS`
 - `MPC_REDIS_URL`
 - manifest URL and trust root values
-- secret delivery
+- secret delivery or secret reference conventions
 - external service exposure for HTTP or peer traffic
-
-The `secret.example.yaml` files are intentionally not ready to apply as-is.
-They are templates showing which keys need to exist.
