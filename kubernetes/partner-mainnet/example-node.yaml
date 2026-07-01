@@ -105,6 +105,14 @@ spec:
           ports:
             - containerPort: 6379
             - containerPort: 16379
+          command:
+            - redis-server
+            - --appendonly
+            - "yes"
+            - --appendfsync
+            - everysec
+            - --save
+            - ""
           volumeMounts:
             - mountPath: /data
               name: redis-storage
@@ -143,6 +151,12 @@ spec:
             - --replicaof
             - redis.multichain-mainnet.svc.cluster.local
             - "6379"
+            - --appendonly
+            - "yes"
+            - --appendfsync
+            - everysec
+            - --save
+            - ""
             - --slave-read-only
             - "no"
 ---
