@@ -126,7 +126,7 @@ metadata:
   name: multichain-testnet-operator
   namespace: multichain-testnet
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: chain-signatures-operator

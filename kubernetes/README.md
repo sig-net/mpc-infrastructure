@@ -27,7 +27,7 @@ they already use:
 
 Each environment folder contains:
 
-- `example-node.yaml`: namespace, service account, services, config maps, multichain workload, and operator outline
+- `example-node.yaml`: namespace, service account, services, config maps, multichain workload, and operator deployment
 - `secret.example.yaml`: placeholder secret values that should be replaced by the operator's secret workflow
 
 The example workload uses a single-replica `StatefulSet` with a headless
@@ -54,11 +54,6 @@ extra naming noise from this repo.
 These examples pin the multichain workload image directly in the pod spec. If
 an operator later wants to layer in signed manifest promotion for Kubernetes,
 they can keep the same resource shape and swap only the image/env delivery path.
-
-Each example also includes a scaled-to-zero operator `Deployment` showing the
-intended Kubernetes-side manifest wiring. It is intentionally not active yet,
-because the current released `chain-signatures-operator` still reconciles only
-the VM implementation today.
 
 ## Adapting The Examples
 
