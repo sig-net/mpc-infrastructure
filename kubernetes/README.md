@@ -19,6 +19,7 @@ they already use:
 - show one-node examples that operators can duplicate or templatize for larger fleets
 - stay compatible with digest-pinned image promotion managed outside this repo
 - mirror the current mainnet workload split closely enough that operators can reason from the live shape
+- make Redis persistence explicit with workload-owned PVCs rather than ephemeral pod storage
 
 ## Layout
 
