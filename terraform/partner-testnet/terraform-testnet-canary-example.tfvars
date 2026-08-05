@@ -1,0 +1,35 @@
+env                     = "testnet"
+project_id              = "near-cs-testnet"
+network                 = "projects/sig-shared-network/global/networks/prod"
+subnetwork              = "projects/sig-shared-network/regions/europe-west1/subnetworks/prod-europe-west1"
+image                   = "europe-west1-docker.pkg.dev/near-cs-testnet/multichain-public/multichain-testnet@sha256:14245b4e94faf4784a1a93450743f643147781d18168935d9c3162c88d0c6e98"
+operator_image          = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/chain-signatures-agent:12daec2"
+manifest_url            = "https://storage.googleapis.com/chain-signatures-testnet-canary/channels/canary/manifest.json"
+manifest_channel        = "testnet-canary"
+trusted_manifest_pubkey = "<testnet-canary-ed25519-public-key>"
+region                  = "europe-west1"
+zone                    = "europe-west1-b"
+
+# This example is intended for destructive operator testing against the node 8
+# playground path. Populate the trusted canary manifest public key after the
+# testnet canary manifest signer is created in sig-infrastructure.
+node_configs = [
+  {
+    node_id                         = 8
+    account                         = "multichain-node-8.testnet"
+    account_sk_secret_id            = "multichain-account-sk-testnet-8"
+    cipher_sk_secret_id             = "multichain-cipher-sk-testnet-8"
+    sign_sk_secret_id               = "multichain-sign-sk-testnet-8"
+    sk_share_secret_id              = "multichain-sk-share-testnet-8"
+    eth_account_sk_secret_id        = "multichain-eth-account-sk-testnet-8"
+    eth_consensus_rpc_url_secret_id = "multichain-eth-consensus-rpc-url-testnet"
+    eth_execution_rpc_url_secret_id = "multichain-eth-execution-rpc-url-testnet"
+    eth_contract_address            = "83458E8Bf8206131Fe5c05127007FA164c0948A2"
+    sol_account_sk_secret_id        = "multichain-sol-account-sk-testnet"
+    sol_rpc_http_url_secret_id      = "multichain-sol-rpc-http-url-testnet"
+    sol_rpc_ws_url_secret_id        = "multichain-sol-rpc-ws-url-testnet"
+    sol_program_address             = "SigTVbfRK9LsXWpSv9KgpabrQcFKr5hDdUwMhYsXyKg"
+    hydration_rpc_ws_url            = "wss://node.lark.hydration.cloud"
+    hydration_signer_uri            = "//Bob"
+  },
+]

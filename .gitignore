@@ -18,6 +18,7 @@ crash.*.log
 !terraform-dev*.tfvars
 !backend-config-*.tfvars
 !terraform-testnet-example.auto.tfvars
+!terraform-testnet-canary-example.tfvars
 !backend.tfvars
 !terraform-mainnet-example.auto.tfvars
 secrets.txt
