@@ -434,7 +434,7 @@ project_id              = "<your_project_id>"
 network                 = "default"
 subnetwork              = "default"
 image                   = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet:<approved-tag>"
-operator_image          = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/chain-signatures-agent:<approved-tag>"
+operator_image          = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/chain-signatures-agent@sha256:caf6d743bbe6d0f31e4257098ec1cc8112efab768306d597f03d2f72552187a5"
 manifest_url            = "https://storage.googleapis.com/chain-signatures-mainnet/channels/stable/manifest.json"
 trusted_manifest_pubkey = "<ed25519-public-key>"
 region                  = "europe-west1"
@@ -468,7 +468,9 @@ node_configs = [
 Notes:
 
 - `project_id` should match the GCP project ID you created
-- `operator_image`, `manifest_url`, and `trusted_manifest_pubkey` must come from the chain signatures team for the approved release channel
+- `operator_image` is pinned above to the current mainnet operator build as of August 13, 2026
+- `manifest_url` is the stable mainnet channel URL that the publisher pipeline should maintain
+- `trusted_manifest_pubkey` comes from `cs-publisher public-key --kms-key-version projects/near-cs-mainnet/locations/global/keyRings/chain-signatures-release/cryptoKeys/manifest/cryptoKeyVersions/1 --bootstrap-env` after the mainnet manifest signer is bootstrapped
 - `account` should be the NEAR account ID created for this node
 - `domain` should be the final FQDN for the node, not including `https://`
 - `region` and `zone` may be changed if desired, but `europe-west1` is the default and preferred region in the current example
