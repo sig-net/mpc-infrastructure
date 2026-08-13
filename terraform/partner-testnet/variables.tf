@@ -148,10 +148,6 @@ variable "static_env" {
       value = "eu-central-1"
     },
     {
-      name  = "MPC_GCP_PROJECT_ID"
-      value = "near-cs-testnet"
-    },
-    {
       name  = "MPC_WEB_PORT"
       value = "3000"
     },

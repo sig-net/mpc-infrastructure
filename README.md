@@ -420,21 +420,25 @@ Then edit `terraform-mainnet.auto.tfvars`.
 At minimum, set:
 
 - `project_id`
+- `operator_image`
+- `manifest_url`
+- `trusted_manifest_pubkey`
 - `account`
 - `domain`
 
 Example structure:
 
 ```hcl
-env        = "mainnet"
-project_id = "<your_project_id>"
-
-network    = "default"
-subnetwork = "default"
-
-image      = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet:latest"
-region     = "europe-west1"
-zone       = "europe-west1-b"
+env                     = "mainnet"
+project_id              = "<your_project_id>"
+network                 = "default"
+subnetwork              = "default"
+image                   = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet:<approved-tag>"
+operator_image          = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/chain-signatures-agent:<approved-tag>"
+manifest_url            = "https://storage.googleapis.com/chain-signatures-mainnet/channels/stable/manifest.json"
+trusted_manifest_pubkey = "<ed25519-public-key>"
+region                  = "europe-west1"
+zone                    = "europe-west1-b"
 
 node_configs = [
   {
@@ -449,10 +453,14 @@ node_configs = [
     eth_account_sk_secret_id        = "multichain-eth-account-sk-mainnet-0"
     eth_consensus_rpc_url_secret_id = "multichain-eth-consensus-rpc-url-mainnet"
     eth_execution_rpc_url_secret_id = "multichain-eth-execution-rpc-url-mainnet"
+    eth_contract_address            = "D39b0aBc0acab7d48aC6DFC9612543f035233b68"
 
-    sol_account_sk_secret_id   = "multichain-sol-account-sk-mainnet-0"
-    sol_rpc_ws_url_secret_id   = "multichain-sol-rpc-ws-url-mainnet"
-    sol_rpc_http_url_secret_id = "multichain-sol-rpc-http-url-mainnet"
+    sol_account_sk_secret_id        = "multichain-sol-account-sk-mainnet-0"
+    sol_program_address             = "SigMcRMjKfnC7RDG5q4yUMZM1s5KJ9oYTPP4NmJRDRw"
+    sol_rpc_ws_url_secret_id        = "multichain-sol-rpc-ws-url-mainnet"
+    sol_rpc_http_url_secret_id      = "multichain-sol-rpc-http-url-mainnet"
+    hydration_rpc_ws_url_secret_id  = "multichain-hydration-rpc-ws-url-mainnet"
+    hydration_signer_uri_secret_id  = "multichain-hydration-signer-uri-mainnet"
   }
 ]
 ```
@@ -460,6 +468,7 @@ node_configs = [
 Notes:
 
 - `project_id` should match the GCP project ID you created
+- `operator_image`, `manifest_url`, and `trusted_manifest_pubkey` must come from the chain signatures team for the approved release channel
 - `account` should be the NEAR account ID created for this node
 - `domain` should be the final FQDN for the node, not including `https://`
 - `region` and `zone` may be changed if desired, but `europe-west1` is the default and preferred region in the current example

@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "multichain-terraform-near-cs-testnet"
+    bucket = "multichain-terraform-{your_entity_name}" # <-- Change me
     prefix = "state/testnet"
   }
 
