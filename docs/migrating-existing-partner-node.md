@@ -45,6 +45,8 @@ Before applying the new config, make sure you have:
 - the correct `trusted_manifest_pubkey`
 - all required current Secret Manager secret IDs populated
 
+Those release values are already supplied in the Terraform code for the current contract, so partners should verify that their deployment values match what is on the current `main` branch instead of copying them from older rollout notes.
+
 For mainnet, that means the deployment should be able to resolve:
 
 - `multichain-account-sk-mainnet-0`
@@ -92,11 +94,13 @@ Review:
 
 against the current live state instead of blindly copying over them.
 
+For Hydration, note that the not-yet-shipped portion of the migration currently uses temporary placeholder values of `"1"`. Call that out explicitly so nobody mistakes the placeholder for a missing production secret.
+
 ## Migration Sequence
 
 ### Option A: in-place migration on the existing node
 
-Use this when the partner wants to preserve the same hostname and infrastructure footprint.
+Use this for current partner-node migrations. The migrated node keeps the same identity as the existing deployment, so this is the only supported option for now.
 
 Recommended order:
 
@@ -107,19 +111,6 @@ Recommended order:
 5. apply
 6. verify that both `multichain` and `chain-signatures-operator` are running
 7. confirm the operator can read and apply the signed manifest
-
-### Option B: parallel cutover
-
-Use this when the partner wants lower migration risk and can afford a second node briefly.
-
-Recommended order:
-
-1. provision a parallel node with the current contract
-2. validate health, logs, and manifest reconciliation
-3. repoint DNS or traffic to the new node
-4. retire the old node after the new one has stayed healthy long enough
-
-This is usually safer if the old deployment shape is poorly documented.
 
 ## Post-Migration Validation
 
