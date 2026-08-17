@@ -112,6 +112,8 @@ The current partner mainnet Terraform contract expects these Secret Manager secr
 - `multichain-hydration-rpc-ws-url-mainnet`
 - `multichain-hydration-signer-uri-mainnet`
 
+Those Hydration mainnet secret IDs are intentionally part of the contract before Hydration is enabled in the live manifest. Partners should create the secrets now so the names are reserved and wired, keep placeholder current values or revisions in place for now, and expect a later signed-manifest release to start consuming them.
+
 ### Required testnet secrets
 
 The current partner testnet Terraform contract expects these node-specific secret IDs plus the shared indexer credentials already referenced by Terraform:
@@ -132,7 +134,7 @@ The current testnet module also depends on:
 - `multichain-indexer-aws-access-key`
 - `multichain-indexer-aws-secret-key`
 
-Hydration values are currently passed directly in `terraform-testnet.auto.tfvars` rather than resolved from Secret Manager.
+Hydration values are currently passed directly in `terraform-testnet.auto.tfvars` rather than resolved from Secret Manager. For mainnet, create the Hydration secret IDs now even though the live manifest does not consume them yet; they are staged for a later release.
 
 ## Repo Layout
 

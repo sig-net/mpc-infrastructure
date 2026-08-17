@@ -46,6 +46,8 @@ Regardless of VM or Kubernetes form factor, the node contract currently includes
 - Hydration connection values where required
 - release bootstrap values such as `MANIFEST_URL`, `MANIFEST_CHANNEL`, and the trusted manifest public key
 
+Where Hydration is not active yet, keep the partner-side names and secret wiring in place ahead of time so a later manifest release can enable them without another contract change.
+
 If Kubernetes and VM deployments drift on those names or meanings, a manifest can publish successfully while one environment still fails at runtime. That is why this repo documents the canonical partner-side inputs even though the k8s manifests live elsewhere.
 
 ## Practical Guidance

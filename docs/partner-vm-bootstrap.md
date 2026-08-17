@@ -168,6 +168,8 @@ multichain-hydration-rpc-ws-url-mainnet
 multichain-hydration-signer-uri-mainnet
 ```
 
+For the two Hydration mainnet secrets, create the secret IDs now so Terraform and the partner contract are already aligned. Use placeholder current values or revisions for now, and do not expect them to be active until a later signed-manifest release enables Hydration.
+
 ### Testnet secret IDs
 
 Create these node-specific testnet secrets:
@@ -236,6 +238,8 @@ For mainnet, `node_configs[0]` currently includes:
 - external domain
 - ETH contract address
 - Solana program address
+
+The Hydration secret IDs are staged forward-compat inputs. Partners should wire them now, keep placeholder current values or revisions in place for now, and expect a later manifest release to start consuming them.
 
 ## 9. Initialize And Apply Terraform
 
@@ -309,5 +313,7 @@ The app container receives:
 - SOL credentials and RPC endpoints
 - Hydration connection values
 - release bootstrap values such as account ID, environment, local address, and manifest metadata
+
+For mainnet, treat the Hydration values as prewired but inactive until the signed manifest starts declaring them. Their presence in Terraform and Secret Manager does not by itself mean the live workload is consuming them yet.
 
 If those values drift from the signed-manifest contract or Terraform naming contract, upgrades become harder to reason about. Keep Terraform, Secret Manager, and publisher-managed env names aligned.

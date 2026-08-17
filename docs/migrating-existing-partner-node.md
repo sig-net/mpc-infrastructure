@@ -62,6 +62,8 @@ For mainnet, that means the deployment should be able to resolve:
 - `multichain-hydration-rpc-ws-url-mainnet`
 - `multichain-hydration-signer-uri-mainnet`
 
+For the Hydration mainnet secrets, the goal is to have the canonical secret IDs created and wired now even before Hydration is enabled in the live manifest. Keep placeholder current values or revisions in place for now, then add a new secret revision later when the signed manifest release is ready to consume them.
+
 ## Secret Strategy
 
 For existing partners, the safest migration pattern is:
@@ -94,7 +96,7 @@ Review:
 
 against the current live state instead of blindly copying over them.
 
-For Hydration, note that the not-yet-shipped portion of the migration currently uses temporary placeholder values of `"1"`. Call that out explicitly so nobody mistakes the placeholder for a missing production secret.
+For Hydration, call out explicitly that these secrets are staged but not active yet. Partners should create the canonical secret IDs now, use placeholder current values or revisions for the time being, and expect a later signed-manifest release to start consuming them.
 
 ## Migration Sequence
 
@@ -136,7 +138,7 @@ sudo ls -R /var/lib/chain-signatures
 
 - secret names in Terraform do not exist in Secret Manager
 - legacy secret names still exist, but the new canonical names do not
-- Hydration values were never provisioned for the older deployment
+- Hydration secret IDs were never provisioned for the older deployment, even though a later manifest release will expect them
 - DNS is pointed correctly, but the load balancer backend is unhealthy
 - the operator bootstrap key or manifest URL is wrong for the environment
 
