@@ -9,6 +9,10 @@ Use this guide when the partner already has:
 - existing Secret Manager entries
 - an existing DNS name or load balancer
 
+Use the new-partner bootstrap guide instead when you are building a fresh node:
+
+- [Partner VM Bootstrap Guide](partner-vm-bootstrap.md)
+
 ## What Changed In The New Deployment Model
 
 The current contract adds or formalizes several things that older partner deployments may not have had:
@@ -20,9 +24,49 @@ The current contract adds or formalizes several things that older partner deploy
 
 In other words, the migration is not just “change the app image.” It is a bootstrap-contract migration.
 
-## Before You Touch Terraform
+## Migration Requirements
 
-Inventory the current deployment first.
+Before starting, make sure you have:
+
+- admin access to the existing GCP project
+- permission to read Secret Manager metadata and current secret values or
+  versions
+- permission to inspect or update the existing VM, load balancer, and DNS
+  configuration
+- a local machine with `git`, `gcloud`, and `terraform`
+- access to the chain-signatures team for current release values if your old
+  rollout notes are stale
+- the approved current `image`
+- the approved current `operator_image`
+- the correct `manifest_url`
+- the correct `trusted_manifest_pubkey`
+- all required current Secret Manager secret IDs populated
+
+Those release values are already supplied in the Terraform code for the current
+contract, so partners should verify that their deployment values match what is
+on the current `main` branch instead of copying them from older rollout notes.
+
+## If The Original Owners Changed
+
+For older partner deployments, do not assume the same people still own the GCP
+project, DNS zone, Terraform state bucket, or Secret Manager entries.
+
+Before touching infrastructure, confirm who currently controls:
+
+- the GCP project that hosts the node
+- the Terraform state bucket and state path
+- the DNS zone or registrar account
+- the NEAR account tied to the node
+- the Secret Manager secrets currently used by production
+- any existing runbooks or rollout notes
+
+If some of that ownership is unclear, stop and resolve that first. Migration is
+hard to recover cleanly if you discover halfway through that the team cannot
+update DNS, inspect the old VM, or read the production secret set.
+
+## Inventory The Current Deployment
+
+Inventory the live deployment before writing or changing tfvars.
 
 Confirm:
 
@@ -32,20 +76,34 @@ Confirm:
 - the current Secret Manager secret names in the partner project
 - whether the node already has the Hydration values available
 - the current DNS name and load balancer setup
+- the current service account attached to the VM
+- the existing Terraform state location if Terraform still manages the node
+- whether any handwritten startup-script or metadata changes were applied outside
+  Terraform
 
 Do not assume the current live secret names match the current example tfvars. Check them.
 
-## Minimum Migration Prerequisites
+Useful checks:
 
-Before applying the new config, make sure you have:
+```bash
+gcloud config set project <your-project-id>
+gcloud compute instances list --project <your-project-id>
+gcloud secrets list --project <your-project-id>
+gcloud compute forwarding-rules list --project <your-project-id>
+gcloud compute backend-services list --project <your-project-id>
+```
 
-- the approved current `image`
-- the approved current `operator_image`
-- the correct `manifest_url`
-- the correct `trusted_manifest_pubkey`
-- all required current Secret Manager secret IDs populated
+You should also log into the existing host and capture the current runtime
+shape:
 
-Those release values are already supplied in the Terraform code for the current contract, so partners should verify that their deployment values match what is on the current `main` branch instead of copying them from older rollout notes.
+```bash
+docker ps
+docker logs chain-signatures-operator
+docker logs multichain
+sudo ls -R /var/lib/chain-signatures
+```
+
+## Canonical Secret IDs
 
 For mainnet, that means the deployment should be able to resolve:
 
@@ -64,6 +122,24 @@ For mainnet, that means the deployment should be able to resolve:
 
 For the Hydration mainnet secrets, the goal is to have the canonical secret IDs created and wired now even before Hydration is enabled in the live manifest. Keep placeholder current values or revisions in place for now, then add a new secret revision later when the signed manifest release is ready to consume them.
 
+For testnet, the deployment should be able to resolve:
+
+- `multichain-account-sk-testnet-0`
+- `multichain-cipher-sk-testnet-0`
+- `multichain-sign-sk-testnet-0`
+- `multichain-sk-share-testnet-0`
+- `multichain-eth-account-sk-testnet-0`
+- `multichain-eth-consensus-rpc-url-testnet`
+- `multichain-eth-execution-rpc-url-testnet`
+- `multichain-sol-account-sk-testnet-0`
+- `multichain-sol-rpc-http-url-testnet`
+- `multichain-sol-rpc-ws-url-testnet`
+
+The current testnet module also depends on:
+
+- `multichain-indexer-aws-access-key`
+- `multichain-indexer-aws-secret-key`
+
 ## Secret Strategy
 
 For existing partners, the safest migration pattern is:
@@ -76,6 +152,21 @@ For existing partners, the safest migration pattern is:
 This avoids turning a naming cleanup into an outage.
 
 If a partner currently uses older names, do not rename by deleting first. Duplicate first, validate, then clean up later.
+
+If the partner has secrets but no longer knows which ones are actually live,
+capture the current VM environment and map each live value back to its Secret
+Manager source before changing names or versions.
+
+## Prepare Local Tooling
+
+Authenticate `gcloud` and make sure Terraform can read the existing project:
+
+```bash
+gcloud auth login
+gcloud auth application-default login
+gcloud config set project <your-project-id>
+gcloud auth application-default set-quota-project <your-project-id>
+```
 
 ## Terraform Changes To Expect
 
@@ -96,6 +187,17 @@ Review:
 
 against the current live state instead of blindly copying over them.
 
+Migration tfvars should preserve existing identity and routing values unless you
+intend to rotate them. In practice, verify especially:
+
+- `project_id`
+- `network` and `subnetwork`
+- `region` and `zone`
+- `node_configs[*].account`
+- the existing mainnet domain or existing testnet endpoint
+- the secret IDs currently used by production
+- the current contract addresses or program addresses already tied to the node
+
 For Hydration, call out explicitly that these secrets are staged but not active yet. Partners should create the canonical secret IDs now, use placeholder current values or revisions for the time being, and expect a later signed-manifest release to start consuming them.
 
 ## Migration Sequence
@@ -109,10 +211,22 @@ Recommended order:
 1. duplicate missing secrets to the canonical IDs
 2. update tfvars to the current contract
 3. run `terraform plan`
-4. confirm the plan does not unintentionally replace networking or identity resources you meant to keep
+4. confirm the plan does not unintentionally replace networking, DNS-facing, or identity resources you meant to keep
 5. apply
 6. verify that both `multichain` and `chain-signatures-operator` are running
 7. confirm the operator can read and apply the signed manifest
+
+During plan review, pay particular attention to any proposed replacement of:
+
+- service accounts
+- reserved IP addresses
+- managed SSL certificates
+- forwarding rules
+- backend services
+- DNS-facing hostnames
+
+If Terraform wants to replace one of those unexpectedly, stop and reconcile the
+inputs before apply.
 
 ## Post-Migration Validation
 
@@ -134,6 +248,14 @@ docker logs multichain
 sudo ls -R /var/lib/chain-signatures
 ```
 
+Recommended external checks:
+
+```bash
+gcloud compute instances list --project <your-project-id>
+gcloud compute backend-services get-health <backend-service-name> --global --project <your-project-id>
+curl -I https://<hostname>
+```
+
 ## Common Migration Risks
 
 - secret names in Terraform do not exist in Secret Manager
@@ -141,5 +263,7 @@ sudo ls -R /var/lib/chain-signatures
 - Hydration secret IDs were never provisioned for the older deployment, even though a later manifest release will expect them
 - DNS is pointed correctly, but the load balancer backend is unhealthy
 - the operator bootstrap key or manifest URL is wrong for the environment
+- the current team can read the project but cannot update DNS or the Terraform state
+- handwritten changes on the old VM are silently lost because they were never captured in Terraform inputs
 
 The migration should be treated as successful only after the operator has reconciled the workload against the signed manifest, not merely after Terraform apply succeeds.
