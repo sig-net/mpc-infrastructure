@@ -180,12 +180,15 @@ Compared with older deployments, expect to add or confirm:
 - Solana secret IDs
 - Hydration secret IDs for mainnet, or Hydration values for testnet
 
-Review:
+Review the environment-specific tfvars file that matches the deployment you are
+migrating:
 
 - `terraform/partner-mainnet/terraform-mainnet-example.auto.tfvars`
 - `terraform/partner-testnet/terraform-testnet-example.auto.tfvars`
 
-against the current live state instead of blindly copying over them.
+Use those files as the source of truth for which inputs belong to mainnet vs
+testnet, then compare them against the current live state instead of blindly
+copying over them.
 
 Migration tfvars should preserve existing identity and routing values unless you
 intend to rotate them. In practice, verify especially:
@@ -198,7 +201,10 @@ intend to rotate them. In practice, verify especially:
 - the secret IDs currently used by production
 - the current contract addresses or program addresses already tied to the node
 
-For Hydration, call out explicitly that these secrets are staged but not active yet. Partners should create the canonical secret IDs now, use placeholder current values or revisions for the time being, and expect a later signed-manifest release to start consuming them.
+For Hydration, call out explicitly that these secrets are staged but not active
+yet. Partners should create the canonical secret IDs now, use placeholder
+current values or revisions for the time being, and expect a later
+signed-manifest release to start consuming them.
 
 ## Migration Sequence
 
@@ -206,15 +212,72 @@ For Hydration, call out explicitly that these secrets are staged but not active 
 
 Use this for current partner-node migrations. The migrated node keeps the same identity as the existing deployment, so this is the only supported option for now.
 
+There is intentionally no Option B in this guide. A parallel cutover-style
+replacement node is not documented here because these partner nodes keep the
+same identity and secret contract, so standing up a duplicate node first is
+more likely to create operator confusion than to reduce risk.
+
 Recommended order:
 
-1. duplicate missing secrets to the canonical IDs
-2. update tfvars to the current contract
-3. run `terraform plan`
+1. duplicate missing secrets to the repo’s expected secret IDs for that environment
+2. update the matching tfvars file to the current contract
+3. run `terraform plan` from the correct Terraform directory
 4. confirm the plan does not unintentionally replace networking, DNS-facing, or identity resources you meant to keep
-5. apply
+5. run `terraform apply`
 6. verify that both `multichain` and `chain-signatures-operator` are running
 7. confirm the operator can read and apply the signed manifest
+
+In step 1, “repo’s expected secret IDs” means the exact secret names used by the
+current Terraform contract in this repository for the target environment. Use:
+
+- `terraform/partner-mainnet/terraform-mainnet-example.auto.tfvars` for mainnet
+- `terraform/partner-testnet/terraform-testnet-example.auto.tfvars` for testnet
+
+If the live project still uses older names, duplicate the current secret values
+to the names shown in the matching file before changing Terraform inputs.
+
+In step 2, edit the file that matches the environment you are migrating:
+
+- mainnet: `terraform/partner-mainnet/terraform-mainnet.auto.tfvars`
+- testnet: `terraform/partner-testnet/terraform-testnet.auto.tfvars`
+
+If you do not already have a local env-specific tfvars file, start by copying
+from the matching example file in the same directory and then replace the values
+with the current live deployment values.
+
+In steps 3 through 5, run Terraform from the environment directory you are
+migrating:
+
+For mainnet:
+
+```bash
+cd terraform/partner-mainnet
+terraform init
+terraform plan -var-file=terraform-mainnet.auto.tfvars
+terraform apply -var-file=terraform-mainnet.auto.tfvars
+```
+
+For testnet:
+
+```bash
+cd terraform/partner-testnet
+terraform init
+terraform plan -var-file=terraform-testnet.auto.tfvars
+terraform apply -var-file=terraform-testnet.auto.tfvars
+```
+
+In steps 6 and 7, operators should verify the runtime directly on the host:
+
+```bash
+docker ps
+docker logs chain-signatures-operator
+docker logs multichain
+sudo ls -R /var/lib/chain-signatures
+```
+
+They should see both containers running, no missing-secret errors, and operator
+logs that show successful signed-manifest verification and reconcile behavior
+for the intended environment and channel.
 
 During plan review, pay particular attention to any proposed replacement of:
 
