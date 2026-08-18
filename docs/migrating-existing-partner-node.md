@@ -208,14 +208,8 @@ signed-manifest release to start consuming them.
 
 ## Migration Sequence
 
-### Option A: in-place migration on the existing node
-
-Use this for current partner-node migrations. The migrated node keeps the same identity as the existing deployment, so this is the only supported option for now.
-
-There is intentionally no Option B in this guide. A parallel cutover-style
-replacement node is not documented here because these partner nodes keep the
-same identity and secret contract, so standing up a duplicate node first is
-more likely to create operator confusion than to reduce risk.
+For current partner-node migrations, keep the existing node identity and update
+it in place. This guide does not cover a parallel duplicate-node cutover.
 
 Recommended order:
 
