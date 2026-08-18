@@ -209,7 +209,7 @@ signed-manifest release to start consuming them.
 ## Migration Sequence
 
 For current partner-node migrations, keep the existing node identity and update
-it in place. This guide does not cover a parallel duplicate-node cutover.
+it in place.
 
 Recommended order:
 
