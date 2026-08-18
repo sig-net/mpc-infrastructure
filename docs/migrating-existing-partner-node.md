@@ -218,8 +218,8 @@ Recommended order:
 3. run `terraform plan` from the correct Terraform directory
 4. confirm the plan does not unintentionally replace networking, DNS-facing, or identity resources you meant to keep
 5. run `terraform apply`
-6. verify that both `multichain` and `chain-signatures-operator` are running
-7. confirm the operator can read and apply the signed manifest
+6. verify that both `multichain` and `chain-signatures-operator` are running, for example with `docker ps`; both containers should be present and up
+7. confirm the operator can read and apply the signed manifest, for example with `docker logs chain-signatures-operator`, `docker logs multichain`, and `sudo ls -R /var/lib/chain-signatures`; look for successful signed-manifest verification, reconcile activity for the intended environment/channel, and no missing-secret errors
 
 In step 1, “repo’s expected secret IDs” means the exact secret names used by the
 current Terraform contract in this repository for the target environment. Use:
@@ -259,19 +259,6 @@ terraform init
 terraform plan -var-file=terraform-testnet.auto.tfvars
 terraform apply -var-file=terraform-testnet.auto.tfvars
 ```
-
-In steps 6 and 7, operators should verify the runtime directly on the host:
-
-```bash
-docker ps
-docker logs chain-signatures-operator
-docker logs multichain
-sudo ls -R /var/lib/chain-signatures
-```
-
-They should see both containers running, no missing-secret errors, and operator
-logs that show successful signed-manifest verification and reconcile behavior
-for the intended environment and channel.
 
 During plan review, pay particular attention to any proposed replacement of:
 
