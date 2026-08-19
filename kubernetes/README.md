@@ -5,12 +5,15 @@ chain-signatures deployment model introduced in this repository.
 
 The current concrete example is:
 
-- `chain-signatures/testnet-node-8/`
+- `chain-signatures/example-node/`
 
-That example mirrors the live testnet node 8 rollout shape in `sig-kustomize`
-closely enough to show the required moving parts for this change:
+That example mirrors the internal node rollout shape used in `sig-kustomize`,
+but the names are intentionally generalized so it reads as a reference pattern
+rather than a copy-paste of a live deployment.
 
-- the `multichain` workload
+It shows the required moving parts for this change:
+
+- the `multichain-node` workload
 - the separate `chain-signatures-operator` workload
 - the operator bootstrap contract
 - the RBAC needed for the operator to patch the workload

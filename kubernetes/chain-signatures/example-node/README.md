@@ -1,7 +1,7 @@
-# Testnet Node 8 Example
+# Example Node
 
 This folder is a suggested Kubernetes implementation for the operator-based
-chain-signatures runtime, based on the current testnet node 8 shape.
+chain-signatures runtime.
 
 It is intended to answer a practical question that `docs/kubernetes-overview.md`
 does not currently answer well enough:
@@ -9,13 +9,16 @@ does not currently answer well enough:
 "What do I actually need to deploy for a Kubernetes-based node that matches the
 current operator contract?"
 
+The structure mirrors how SIG currently runs these nodes internally, but the
+resource names here are intentionally generic.
+
 ## Included
 
 - namespace
 - Workload Identity service account
-- `multichain-testnet-8` application deployment
-- `multichain-testnet-8` load balancer service
-- `multichain-testnet-8-operator` deployment
+- `multichain-node` application deployment
+- `multichain-node` load balancer service
+- `multichain-node-operator` deployment
 - operator RBAC
 - Redis master
 - Redis replica
@@ -29,16 +32,16 @@ still strict: secrets should be injected securely.
 Recommended approach:
 
 - use External Secrets Operator (ESO) or an equivalent mechanism
-- sync raw secret material into the `multichain-testnet-8-secrets` Kubernetes
+- sync raw secret material into the `multichain-node-secrets` Kubernetes
   `Secret`
-- generate the `multichain-testnet-8-operator-bootstrap` Kubernetes `Secret`
+- generate the `multichain-node-operator-bootstrap` Kubernetes `Secret`
   from the same secret source plus the non-secret bootstrap values
 
 Two example ESO manifests are included but not referenced by
 `kustomization.yaml`:
 
-- `multichain-testnet-8-secrets.externalsecret.example.yaml`
-- `multichain-testnet-8-operator-bootstrap.externalsecret.example.yaml`
+- `multichain-node-secrets.externalsecret.example.yaml`
+- `multichain-node-operator-bootstrap.externalsecret.example.yaml`
 
 If you do not use ESO, create equivalent Kubernetes `Secret` objects manually or
 with your preferred secret-management workflow.

@@ -7,7 +7,7 @@ expected to consume.
 For a concrete suggested implementation of the current operator contract, see:
 
 - [kubernetes/README.md](../kubernetes/README.md)
-- [kubernetes/chain-signatures/testnet-node-8/README.md](../kubernetes/chain-signatures/testnet-node-8/README.md)
+- [kubernetes/chain-signatures/example-node/README.md](../kubernetes/chain-signatures/example-node/README.md)
 
 ## What Lives Here Versus Elsewhere
 

@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: multichain-node-config
+  namespace: chain-sig
+data:
+  MPC_NEAR_RPC: https://rpc.example.net
+  MPC_CONTRACT_ID: v1.example.contract
+  MPC_INDEXER_S3_BUCKET: example-indexer-bucket
+  AWS_DEFAULT_REGION: us-east-1
+  MPC_GCP_PROJECT_ID: example-project
+  MPC_WEB_PORT: "3000"
+  RUST_LOG: mpc_node=debug
+  MPC_INDEXER_S3_REGION: us-east-1
+  MPC_NODE_ID: "0"
+  MPC_ACCOUNT_ID: multichain-node.example
+  MPC_CIPHER_PK: <cipher-public-key>
+  MPC_LOCAL_ADDRESS: https://multichain-node.example.net
+  MPC_SK_SHARE_SECRET_ID: multichain-sk-share-example-0
+  MPC_ENV: example
+  MPC_REDIS_URL: redis://redis.chain-sig.svc.cluster.local:6379
+  MPC_ETH_CONTRACT_ADDRESS: <evm-contract-address>
+  MPC_SOL_PROGRAM_ADDRESS: <solana-program-address>
+  MPC_CANTON_JSON_API_URL: https://ledger.example.net
+  MPC_CANTON_JSON_API_WS_URL: wss://ledger.example.net
+  MPC_CANTON_LEDGER_API_USER: <ledger-api-user>
+  MPC_CANTON_OIDC_SCOPE: daml_ledger_api
+  MPC_CANTON_PARTY_ID: <canton-party-id>
+  MPC_CANTON_SIGNER_CONTRACT_ID: <signer-contract-id>
+  MPC_CANTON_SIGNER_TEMPLATE_ID: "#signet-signer-v1:Signer:Signer"
