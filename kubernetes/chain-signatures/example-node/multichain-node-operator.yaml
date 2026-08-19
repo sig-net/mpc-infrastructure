@@ -16,7 +16,7 @@ spec:
       serviceAccountName: k8s-sa
       containers:
         - name: chain-signatures-operator
-          image: europe-west1-docker.pkg.dev/example-project/multichain-public/chain-signatures-agent:latest
+          image: europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/chain-signatures-agent@sha256:caf6d743bbe6d0f31e4257098ec1cc8112efab768306d597f03d2f72552187a5
           imagePullPolicy: Always
           args:
             - cs-agent

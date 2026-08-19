@@ -4,27 +4,22 @@ metadata:
   name: multichain-node-config
   namespace: chain-sig
 data:
-  MPC_NEAR_RPC: https://rpc.example.net
-  MPC_CONTRACT_ID: v1.example.contract
-  MPC_INDEXER_S3_BUCKET: example-indexer-bucket
-  AWS_DEFAULT_REGION: us-east-1
-  MPC_GCP_PROJECT_ID: example-project
+  MPC_NEAR_RPC: https://rpc.mainnet.fastnear.com
+  MPC_CONTRACT_ID: v1.sig-net.near
+  MPC_INDEXER_S3_BUCKET: near-lake-data-mainnet
+  AWS_DEFAULT_REGION: eu-central-1
+  AWS_ACCESS_KEY_ID: "1"
+  AWS_SECRET_ACCESS_KEY: "1"
+  MPC_GCP_PROJECT_ID: near-cs-mainnet
   MPC_WEB_PORT: "3000"
-  RUST_LOG: mpc_node=debug
-  MPC_INDEXER_S3_REGION: us-east-1
+  RUST_LOG: mpc_node=info
+  MPC_INDEXER_S3_REGION: eu-central-1
+  MPC_CLIENT_HEADER_REFERER: https://sig.network
   MPC_NODE_ID: "0"
-  MPC_ACCOUNT_ID: multichain-node.example
-  MPC_CIPHER_PK: <cipher-public-key>
-  MPC_LOCAL_ADDRESS: https://multichain-node.example.net
-  MPC_SK_SHARE_SECRET_ID: multichain-sk-share-example-0
-  MPC_ENV: example
+  MPC_ACCOUNT_ID: company.near
+  MPC_LOCAL_ADDRESS: https://company.example.com
+  MPC_SK_SHARE_SECRET_ID: multichain-sk-share-mainnet-0
+  MPC_ENV: mainnet
   MPC_REDIS_URL: redis://redis.chain-sig.svc.cluster.local:6379
-  MPC_ETH_CONTRACT_ADDRESS: <evm-contract-address>
-  MPC_SOL_PROGRAM_ADDRESS: <solana-program-address>
-  MPC_CANTON_JSON_API_URL: https://ledger.example.net
-  MPC_CANTON_JSON_API_WS_URL: wss://ledger.example.net
-  MPC_CANTON_LEDGER_API_USER: <ledger-api-user>
-  MPC_CANTON_OIDC_SCOPE: daml_ledger_api
-  MPC_CANTON_PARTY_ID: <canton-party-id>
-  MPC_CANTON_SIGNER_CONTRACT_ID: <signer-contract-id>
-  MPC_CANTON_SIGNER_TEMPLATE_ID: "#signet-signer-v1:Signer:Signer"
+  MPC_ETH_CONTRACT_ADDRESS: D39b0aBc0acab7d48aC6DFC9612543f035233b68
+  MPC_SOL_PROGRAM_ADDRESS: SigMcRMjKfnC7RDG5q4yUMZM1s5KJ9oYTPP4NmJRDRw

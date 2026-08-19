@@ -5,6 +5,10 @@ This folder is a Kubernetes example for the current operator-based
 
 The resource names are intentionally generic.
 
+The runtime values in the manifests are aligned to the current mainnet VM
+deployment contract so the Kubernetes example uses the same network-level
+settings.
+
 ## Included
 
 - namespace

@@ -20,7 +20,7 @@ spec:
       serviceAccountName: k8s-sa
       containers:
         - name: multichain-node
-          image: europe-west1-docker.pkg.dev/example-project/multichain-public/multichain:latest
+          image: europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet:631a0b00085dfc167e115643f791e8eed2cac0cb
           imagePullPolicy: Always
           resources:
             limits:
