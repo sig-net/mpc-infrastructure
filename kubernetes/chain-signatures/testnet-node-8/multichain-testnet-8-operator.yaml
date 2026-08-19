@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multichain-testnet-8-operator
+  namespace: chain-sig
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multichain-testnet-8-operator
+  template:
+    metadata:
+      labels:
+        app: multichain-testnet-8-operator
+    spec:
+      serviceAccountName: k8s-sa
+      containers:
+        - name: chain-signatures-operator
+          image: europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/chain-signatures-agent:latest
+          imagePullPolicy: Always
+          args:
+            - cs-agent
+            - daemon
+            - --bootstrap
+            - /config/bootstrap.env
+          volumeMounts:
+            - name: operator-bootstrap
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: operator-bootstrap
+          secret:
+            secretName: multichain-testnet-8-operator-bootstrap
+            items:
+              - key: bootstrap.env
+                path: bootstrap.env

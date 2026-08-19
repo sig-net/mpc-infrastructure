@@ -1,6 +1,13 @@
 # Kubernetes Deployment Overview
 
-This repository does not deploy the Kubernetes environments directly, but it does define part of the shared release contract those environments are expected to consume.
+This repository does not deploy the live Kubernetes environments directly, but
+it does define part of the shared release contract those environments are
+expected to consume.
+
+For a concrete suggested implementation of the current operator contract, see:
+
+- [kubernetes/README.md](../kubernetes/README.md)
+- [kubernetes/chain-signatures/testnet-node-8/README.md](../kubernetes/chain-signatures/testnet-node-8/README.md)
 
 ## What Lives Here Versus Elsewhere
 
@@ -27,7 +34,8 @@ Both VM-based and Kubernetes-based rollouts are converging on the same core rele
 
 For VM deployments in this repo, that bootstrap layer is the `chain-signatures-operator` container running beside `multichain` on the host VM.
 
-For Kubernetes deployments, the same concepts apply, but the cluster-level implementation lives in the Kubernetes repos:
+For Kubernetes deployments, the same concepts apply, but the live cluster-level
+implementation lives in the Kubernetes repos:
 
 - the manifest URL and trusted public key need to be injected into the workload bootstrap path
 - runtime secrets need to be mounted or injected with names and values that match the expected node contract
@@ -58,5 +66,6 @@ When updating the release contract:
 - update the publisher-managed env references
 - update the Kubernetes overlays in the cluster repo
 - update migration guidance for already-running partners
+- update the suggested manifests in `kubernetes/` when the implementation shape changes
 
 Treat the manifest contract, secret naming, and bootstrap public key as cross-repo changes, not repo-local changes.

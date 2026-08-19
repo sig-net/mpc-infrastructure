@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: multichain-testnet-8-config
+  namespace: chain-sig
+data:
+  MPC_NEAR_RPC: https://rpc.testnet.fastnear.com
+  MPC_CONTRACT_ID: v1.sig-net.testnet
+  MPC_INDEXER_S3_BUCKET: near-lake-data-testnet
+  AWS_DEFAULT_REGION: eu-central-1
+  MPC_GCP_PROJECT_ID: near-cs-testnet
+  MPC_WEB_PORT: "3000"
+  RUST_LOG: mpc_node=debug
+  MPC_INDEXER_S3_REGION: eu-central-1
+  MPC_NODE_ID: "8"
+  MPC_ACCOUNT_ID: multichain-node-8.testnet
+  MPC_CIPHER_PK: bd721c2cf0c3f3ef9429726e2a658e72714587367b40449739cb3a35994d692a
+  MPC_LOCAL_ADDRESS: http://35.187.119.120:3000
+  MPC_SK_SHARE_SECRET_ID: multichain-sk-share-testnet-8
+  MPC_ENV: testnet
+  MPC_REDIS_URL: redis://redis.chain-sig.svc.cluster.local:6379
+  MPC_ETH_CONTRACT_ADDRESS: 83458E8Bf8206131Fe5c05127007FA164c0948A2
+  MPC_SOL_PROGRAM_ADDRESS: SigTVbfRK9LsXWpSv9KgpabrQcFKr5hDdUwMhYsXyKg
+  MPC_CANTON_JSON_API_URL: https://ledger.testnet.sig.network
+  MPC_CANTON_JSON_API_WS_URL: wss://ledger.testnet.sig.network
+  MPC_CANTON_LEDGER_API_USER: aBwBb0dftAeCqfHuEgMWjY9PKoZBgmRe@clients
+  MPC_CANTON_OIDC_SCOPE: daml_ledger_api
+  MPC_CANTON_PARTY_ID: signet-testnet-1::1220406d2f89551d4b9eaafa1dbd2831186ac0ca8f5e2d143e01ffcf85394fbf63cb
+  MPC_CANTON_SIGNER_CONTRACT_ID: 003d56cd3154fa726ff8b6d92bf0ba5c82d3892a1500e2cceabf8e21b624543797ca121220408eba66be8f0ad24af1e2f4b1febdda569e4e999fe02cbc742f4c1fae769844
+  MPC_CANTON_SIGNER_TEMPLATE_ID: "#signet-signer-v1:Signer:Signer"

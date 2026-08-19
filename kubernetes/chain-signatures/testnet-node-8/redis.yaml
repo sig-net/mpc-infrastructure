@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: chain-sig
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-master
+  namespace: chain-sig
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      role: master
+  template:
+    metadata:
+      labels:
+        role: master
+        app: redis
+    spec:
+      terminationGracePeriodSeconds: 120
+      initContainers:
+        - name: cleanup-stale-rdb-temp-files
+          image: busybox:1.36
+          command:
+            - sh
+            - -lc
+            - |
+              echo "Cleaning stale Redis temp RDB files"
+              rm -f /data/temp-*.rdb
+              ls -lah /data || true
+          volumeMounts:
+            - mountPath: /data
+              name: redis-storage
+      containers:
+        - name: redis-master
+          image: redis:7.4.2
+          command:
+            - redis-server
+            - --appendonly
+            - "yes"
+            - --appendfsync
+            - everysec
+            - --save
+            - ""
+          ports:
+            - containerPort: 6379
+            - containerPort: 16379
+          volumeMounts:
+            - mountPath: /data
+              name: redis-storage
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-slave
+  namespace: chain-sig
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      role: slave
+  template:
+    metadata:
+      labels:
+        role: slave
+    spec:
+      containers:
+        - name: redis-slave
+          image: redis:7.4.2
+          command:
+            - redis-server
+            - --replicaof
+            - redis.chain-sig.svc.cluster.local
+            - "6379"
+            - --slave-read-only
+            - "no"
+          ports:
+            - containerPort: 6379
+            - containerPort: 16379
