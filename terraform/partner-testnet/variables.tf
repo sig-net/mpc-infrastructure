@@ -20,6 +20,33 @@ variable "image" {
   default     = "europe-west1-docker.pkg.dev/near-cs-testnet/multichain-public/multichain-testnet:latest"
 }
 
+variable "operator_image" {
+  description = "The chain-signatures operator image to run beside the multichain container"
+  type        = string
+}
+
+variable "manifest_url" {
+  description = "Signed release manifest URL consumed by the chain-signatures operator"
+  type        = string
+}
+
+variable "trusted_manifest_pubkey" {
+  description = "Ed25519 public key content used to verify the signed release manifest"
+  type        = string
+}
+
+variable "manifest_channel" {
+  description = "Release channel name to read from the signed manifest"
+  type        = string
+  default     = "testnet-stable"
+}
+
+variable "poll_interval_seconds" {
+  description = "Polling interval for the chain-signatures operator"
+  type        = number
+  default     = 300
+}
+
 variable "source_image" {
   type    = string
   default = "projects/cos-cloud/global/images/cos-stable-117-18613-75-37"
@@ -69,6 +96,7 @@ variable "env_variables" {
 
 variable "node_configs" {
   type = list(object({
+    node_id                         = number
     account                         = string
     account_sk_secret_id            = string
     cipher_sk_secret_id             = string
@@ -85,11 +113,16 @@ variable "node_configs" {
     hydration_rpc_ws_url            = string
     hydration_signer_uri            = string
   }))
+
+  validation {
+    condition     = length(var.node_configs) == 1
+    error_message = "partner-testnet currently supports exactly one node config per deployment."
+  }
 }
 
 variable "env" {
   type    = string
-  default = "dev"
+  default = "testnet"
 }
 
 variable "static_env" {
@@ -113,10 +146,6 @@ variable "static_env" {
     {
       name  = "AWS_DEFAULT_REGION"
       value = "eu-central-1"
-    },
-    {
-      name  = "MPC_GCP_PROJECT_ID"
-      value = "<your-project-id>"
     },
     {
       name  = "MPC_WEB_PORT"

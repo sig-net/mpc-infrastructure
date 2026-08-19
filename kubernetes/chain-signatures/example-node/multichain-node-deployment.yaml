@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multichain-node
+  namespace: chain-sig
+  labels:
+    app: multichain-node
+    deploy: multichain
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multichain-node
+  template:
+    metadata:
+      labels:
+        app: multichain-node
+        deploy: multichain
+    spec:
+      serviceAccountName: k8s-sa
+      containers:
+        - name: multichain-node
+          image: europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet:631a0b00085dfc167e115643f791e8eed2cac0cb
+          imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: 1500m
+              memory: 1200Mi
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: multichain-node-config
+            - secretRef:
+                name: multichain-node-secrets

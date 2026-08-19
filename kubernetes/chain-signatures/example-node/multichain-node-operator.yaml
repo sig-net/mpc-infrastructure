@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multichain-node-operator
+  namespace: chain-sig
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multichain-node-operator
+  template:
+    metadata:
+      labels:
+        app: multichain-node-operator
+    spec:
+      serviceAccountName: k8s-sa
+      containers:
+        - name: chain-signatures-operator
+          image: europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/chain-signatures-agent@sha256:caf6d743bbe6d0f31e4257098ec1cc8112efab768306d597f03d2f72552187a5
+          imagePullPolicy: Always
+          args:
+            - cs-agent
+            - daemon
+            - --bootstrap
+            - /config/bootstrap.env
+          volumeMounts:
+            - name: operator-bootstrap
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: operator-bootstrap
+          secret:
+            secretName: multichain-node-operator-bootstrap
+            items:
+              - key: bootstrap.env
+                path: bootstrap.env

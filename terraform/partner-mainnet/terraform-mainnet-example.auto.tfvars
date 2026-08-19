@@ -1,30 +1,33 @@
-env        = "mainnet"
-project_id = "<your-project-id>" # <-- Change me
-network    = "default"
-subnetwork = "default"
-image      = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet:631a0b00085dfc167e115643f791e8eed2cac0cb"
-region     = "europe-west1"
-zone       = "europe-west1-b" # Feel free to choose other zones in the region for HA purposes between nodes
+env                     = "mainnet"
+project_id              = "<your-project-id>" # <-- Change me
+network                 = "default"
+subnetwork              = "default"
+image                   = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/multichain-mainnet:631a0b00085dfc167e115643f791e8eed2cac0cb"
+operator_image          = "europe-west1-docker.pkg.dev/near-cs-mainnet/multichain-public/chain-signatures-agent@sha256:caf6d743bbe6d0f31e4257098ec1cc8112efab768306d597f03d2f72552187a5"
+manifest_url            = "https://storage.googleapis.com/chain-signatures-mainnet/channels/stable/manifest.json"
+trusted_manifest_pubkey = "rvSBFxTf8kEavyQsQp+oLbVMSV9AyUWXDaD/8SeLDXE="
+region                  = "europe-west1"
+zone                    = "europe-west1-b" # Feel free to choose other zones in the region for HA purposes between nodes
 # These will be specific to your node
 node_configs = [
   {
     # Each node has a unique account ID
     account = "company.near" # <-- Change me
     # These values below should match your secret names in google secrets manager
-    account_sk_secret_id                 = "multichain-account-sk-mainnet-0"
-    cipher_sk_secret_id                  = "multichain-cipher-sk-mainnet-0"
-    sign_sk_secret_id                    = "multichain-sign-sk-mainnet-0"
-    sk_share_secret_id                   = "multichain-sk-share-mainnet-0"
-    domain                               = "company.example.com" # <-- Change me
-    eth_account_sk_secret_id             = "multichain-eth-account-sk-mainnet-0"
-    eth_consensus_rpc_url_secret_id      = "multichain-eth-consensus-rpc-url-mainnet"
-    eth_execution_rpc_url_secret_id      = "multichain-eth-execution-rpc-url-mainnet"
-    eth_contract_address                 = "D39b0aBc0acab7d48aC6DFC9612543f035233b68"
-    sol_account_sk_secret_id             = "multichain-sol-account-sk-mainnet-0"
-    sol_program_address                  = "SigMcRMjKfnC7RDG5q4yUMZM1s5KJ9oYTPP4NmJRDRw"
-    sol_rpc_ws_url_secret_id             = "multichain-sol-rpc-ws-url-mainnet"
-    sol_rpc_http_url_secret_id           = "multichain-sol-rpc-http-url-mainnet"
-    hydration_rpc_ws_url_secret_id       = "multichain-hydration-rpc-ws-url-mainnet"
-    hydration_signer_uri_secret_id       = "multichain-hydration-signer-uri-mainnet"
+    account_sk_secret_id            = "multichain-account-sk-mainnet-0"
+    cipher_sk_secret_id             = "multichain-cipher-sk-mainnet-0"
+    sign_sk_secret_id               = "multichain-sign-sk-mainnet-0"
+    sk_share_secret_id              = "multichain-sk-share-mainnet-0"
+    domain                          = "company.example.com" # <-- Change me
+    eth_account_sk_secret_id        = "multichain-eth-account-sk-mainnet-0"
+    eth_consensus_rpc_url_secret_id = "multichain-eth-consensus-rpc-url-mainnet"
+    eth_execution_rpc_url_secret_id = "multichain-eth-execution-rpc-url-mainnet"
+    eth_contract_address            = "D39b0aBc0acab7d48aC6DFC9612543f035233b68"
+    sol_account_sk_secret_id        = "multichain-sol-account-sk-mainnet-0"
+    sol_program_address             = "SigMcRMjKfnC7RDG5q4yUMZM1s5KJ9oYTPP4NmJRDRw"
+    sol_rpc_ws_url_secret_id        = "multichain-sol-rpc-ws-url-mainnet"
+    sol_rpc_http_url_secret_id      = "multichain-sol-rpc-http-url-mainnet"
+    hydration_rpc_ws_url_secret_id  = "multichain-hydration-rpc-ws-url-mainnet"
+    hydration_signer_uri_secret_id  = "multichain-hydration-signer-uri-mainnet"
   },
 ]
