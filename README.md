@@ -31,7 +31,7 @@ live in [docs/repository-overview.md](docs/repository-overview.md).
   guide for a new partner VM deployment
 - [Migration Guide For Existing Partner Nodes](docs/migrating-existing-partner-node.md) -
   moving an existing partner deployment onto the current operator-based contract
-- [Kubernetes Deployment Overview](docs/kubernetes-overview.md) - how the
+- [Kubernetes Deployment Overview](kubernetes/chain-signatures/example-node/README.md) - how the
   shared signed-release model relates to Kubernetes deployments outside this repo
 
 ## Recommended Reading Order

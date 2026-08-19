@@ -1,6 +1,6 @@
 # Example Node
 
-This folder is a concrete Kubernetes example for the current operator-based
+This folder is a Kubernetes example for the current operator-based
 `multichain` runtime.
 
 The resource names are intentionally generic.
@@ -35,5 +35,4 @@ Two example ESO manifests are included but not referenced by
 - `multichain-node-secrets.externalsecret.example.yaml`
 - `multichain-node-operator-bootstrap.externalsecret.example.yaml`
 
-If you do not use ESO, create equivalent Kubernetes `Secret` objects manually or
-with your preferred secret-management workflow.
+If you do not use ESO, please make sure you use a secure secret management solution for kubernetes, kubernetes secrets alone are not sufficent.
