@@ -13,6 +13,17 @@ Use the new-partner bootstrap guide instead when you are building a fresh node:
 
 - [Partner VM Bootstrap Guide](partner-vm-bootstrap.md)
 
+## TL;DR
+
+For most migrations, the execution path is short:
+
+1. create any missing canonical secrets the current contract expects, including the Hydration secrets needed for the target environment
+2. update the local env-specific tfvars file so it matches both the live deployment values and the current Terraform contract
+3. run `terraform apply` from the correct environment directory
+
+Everything else in this document is the detail for verifying the current state,
+avoiding accidental replacements, and validating the node after apply.
+
 ## What Changed In The New Deployment Model
 
 The current contract adds or formalizes several things that older partner deployments may not have had:
