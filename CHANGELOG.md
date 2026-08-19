@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/sig-net/mpc-infrastructure/compare/1.0.0...1.0.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* **terraform:** clean partner operator release defaults ([#21](https://github.com/sig-net/mpc-infrastructure/issues/21)) ([89725b7](https://github.com/sig-net/mpc-infrastructure/commit/89725b78b0745aa7fce97b6224dcf89df156059c))
+
 ## [1.0.0](https://github.com/sig-net/mpc-infrastructure/compare/0.1.0...1.0.0) (2026-03-30)
 
 
