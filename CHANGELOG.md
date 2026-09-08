@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/sig-net/mpc-infrastructure/compare/1.0.1...1.0.2) (2026-09-08)
+
+
+### Bug Fixes
+
+* **terraform:** require signing key secret ([#23](https://github.com/sig-net/mpc-infrastructure/issues/23)) ([cd81b85](https://github.com/sig-net/mpc-infrastructure/commit/cd81b85ad516475a26b8150955ccd51d14ad6449))
+
 ## [1.0.1](https://github.com/sig-net/mpc-infrastructure/compare/1.0.0...1.0.1) (2026-08-19)
 
 
