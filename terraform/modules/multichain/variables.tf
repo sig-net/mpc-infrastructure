@@ -65,7 +65,7 @@ variable "cipher_sk_secret_id" {
 }
 
 variable "sign_sk_secret_id" {
-  type = optional(string)
+  type = string
 }
 
 variable "aws_access_key_secret_id" {

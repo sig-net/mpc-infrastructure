@@ -73,7 +73,7 @@ module "ig_template" {
       {
         MPC_ACCOUNT_SK                 = data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
         MPC_CIPHER_SK                  = data.google_secret_manager_secret_version.cipher_sk_secret_id[count.index].secret_data
-        MPC_SIGN_SK                    = data.google_secret_manager_secret_version.sign_sk_secret_id[count.index] != null ? data.google_secret_manager_secret_version.sign_sk_secret_id[count.index].secret_data : data.google_secret_manager_secret_version.account_sk_secret_id[count.index].secret_data
+        MPC_SIGN_SK                    = data.google_secret_manager_secret_version.sign_sk_secret_id[count.index].secret_data
         AWS_ACCESS_KEY_ID              = "1"
         AWS_SECRET_ACCESS_KEY          = "1"
         MPC_SK_SHARE_SECRET_ID         = var.node_configs[count.index].sk_share_secret_id
