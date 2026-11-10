@@ -115,6 +115,10 @@ resource "google_cloud_run_v2_service" "node" {
         value = var.env
       }
       env {
+        name  = "MPC_LOG_FORMAT"
+        value = "json"
+      }
+      env {
         name  = "MPC_WEB_PORT"
         value = "3000"
       }

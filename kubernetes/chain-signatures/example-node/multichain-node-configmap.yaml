@@ -20,6 +20,7 @@ data:
   MPC_LOCAL_ADDRESS: https://company.example.com
   MPC_SK_SHARE_SECRET_ID: multichain-sk-share-mainnet-0
   MPC_ENV: mainnet
+  MPC_LOG_FORMAT: json
   MPC_REDIS_URL: redis://redis.chain-sig.svc.cluster.local:6379
   MPC_ETH_CONTRACT_ADDRESS: D39b0aBc0acab7d48aC6DFC9612543f035233b68
   MPC_SOL_PROGRAM_ADDRESS: SigMcRMjKfnC7RDG5q4yUMZM1s5KJ9oYTPP4NmJRDRw
