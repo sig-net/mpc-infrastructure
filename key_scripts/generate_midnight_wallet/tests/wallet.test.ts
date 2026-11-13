@@ -26,22 +26,16 @@ const ADDRESSES = [
   {
     network: MidnightNetwork.Preview,
     unshielded: "mn_addr_preview19kxg8sxrsty37elmm6yd68tuy7prryjst2r48eapf2fdtd8z4gpq8xczf2",
-    shielded:
-      "mn_shield-addr_preview1jsy2ala7ahrtndz7r0xxy8g6yulmvlmhmclkt0amrq2dsnutv5j08tnsd0egept2gpmfpdrgpqd87ksj8efr2qdknapet27d0cvsx2cy9mucu",
     dust: "mn_dust_preview1wwd54rhuw4nqajtn34qjslfk0hdc6jlspdkqvvlmmjrsuckpzurpwp4004g",
   },
   {
     network: MidnightNetwork.Preprod,
     unshielded: "mn_addr_preprod19kxg8sxrsty37elmm6yd68tuy7prryjst2r48eapf2fdtd8z4gpq88xj6h",
-    shielded:
-      "mn_shield-addr_preprod1jsy2ala7ahrtndz7r0xxy8g6yulmvlmhmclkt0amrq2dsnutv5j08tnsd0egept2gpmfpdrgpqd87ksj8efr2qdknapet27d0cvsx2cmgn54w",
     dust: "mn_dust_preprod1wwd54rhuw4nqajtn34qjslfk0hdc6jlspdkqvvlmmjrsuckpzurpwqtlugg",
   },
   {
     network: MidnightNetwork.Mainnet,
     unshielded: "mn_addr19kxg8sxrsty37elmm6yd68tuy7prryjst2r48eapf2fdtd8z4gpqunjqeq",
-    shielded:
-      "mn_shield-addr1jsy2ala7ahrtndz7r0xxy8g6yulmvlmhmclkt0amrq2dsnutv5j08tnsd0egept2gpmfpdrgpqd87ksj8efr2qdknapet27d0cvsx2ckxvxuk",
     dust: "mn_dust1wwd54rhuw4nqajtn34qjslfk0hdc6jlspdkqvvlmmjrsuckpzurpw59t5tw",
   },
 ] as const;
@@ -95,7 +89,6 @@ describe("formatGeneratedWallet", () => {
           {
             network: MidnightNetwork.Preprod,
             unshielded: "mn_addr_x",
-            shielded: "mn_shield-addr_y",
             dust: "mn_dust_z",
           },
         ],
@@ -106,7 +99,6 @@ describe("formatGeneratedWallet", () => {
         "",
         "Addresses on preprod:",
         "  Unshielded (NIGHT): mn_addr_x",
-        "  Shielded: mn_shield-addr_y",
         "  Dust: mn_dust_z",
       ].join("\n"),
     );
@@ -114,8 +106,8 @@ describe("formatGeneratedWallet", () => {
 });
 
 describe("parseNetworks", () => {
-  it("names every network when none is given", () => {
-    assert.deepEqual(parseNetworks([]), ["preview", "preprod", "mainnet"]);
+  it("names mainnet when none is given", () => {
+    assert.deepEqual(parseNetworks([]), ["mainnet"]);
   });
 
   it("keeps the named networks in the order given", () => {

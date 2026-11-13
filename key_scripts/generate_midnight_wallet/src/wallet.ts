@@ -7,9 +7,6 @@ import * as ledger from "@midnightntwrk/ledger-v9";
 import {
   DustAddress,
   MidnightBech32m,
-  ShieldedAddress,
-  ShieldedCoinPublicKey,
-  ShieldedEncryptionPublicKey,
   UnshieldedAddress,
 } from "@midnightntwrk/wallet-sdk-address-format";
 import { WalletSeeds } from "@midnightntwrk/wallet-sdk-hd";
@@ -49,8 +46,6 @@ export interface NetworkAddresses {
   readonly network: MidnightNetwork;
   /** The address NIGHT is received at. */
   readonly unshielded: string;
-  /** The address shielded tokens are received at. */
-  readonly shielded: string;
   /** The address NIGHT is registered to for DUST generation. */
   readonly dust: string;
 }
@@ -86,11 +81,10 @@ export function walletFromMnemonic(
  *
  * @param seed - The wallet's seed, 16 to 64 bytes.
  * @param network - The network the addresses are encoded for.
- * @returns The unshielded, shielded and dust addresses.
+ * @returns The unshielded and dust addresses.
  */
 export function addressesFromSeed(seed: Uint8Array, network: MidnightNetwork): NetworkAddresses {
   const seeds = WalletSeeds.fromMasterSeed(seed);
-  const shieldedKeys = ledger.ZswapSecretKeys.fromSeed(seeds.shielded);
   const verifyingKey = ledger.signatureVerifyingKey({
     tag: "schnorr",
     value: Buffer.from(seeds.unshielded).toString("hex"),
@@ -100,13 +94,6 @@ export function addressesFromSeed(seed: Uint8Array, network: MidnightNetwork): N
     unshielded: MidnightBech32m.encode(
       network,
       new UnshieldedAddress(Buffer.from(ledger.addressFromKey(verifyingKey), "hex")),
-    ).asString(),
-    shielded: MidnightBech32m.encode(
-      network,
-      new ShieldedAddress(
-        ShieldedCoinPublicKey.fromHexString(shieldedKeys.coinPublicKey),
-        ShieldedEncryptionPublicKey.fromHexString(shieldedKeys.encryptionPublicKey),
-      ),
     ).asString(),
     dust: DustAddress.encodePublicKey(network, dustPublicKeyFromSeed(seed)),
   };
@@ -133,11 +120,10 @@ export function formatGeneratedWallet(wallet: GeneratedWallet): string {
   return [
     `Seed Words: ${wallet.mnemonic}`,
     `Seed Hex: ${wallet.seedHex}`,
-    ...wallet.addresses.flatMap(({ network, unshielded, shielded, dust }) => [
+    ...wallet.addresses.flatMap(({ network, unshielded, dust }) => [
       "",
       `Addresses on ${network}:`,
       `  Unshielded (NIGHT): ${unshielded}`,
-      `  Shielded: ${shielded}`,
       `  Dust: ${dust}`,
     ]),
   ].join("\n");
@@ -147,12 +133,12 @@ export function formatGeneratedWallet(wallet: GeneratedWallet): string {
  * Read the networks named on a command line.
  *
  * @param names - The network names as typed, e.g. `["preprod", "mainnet"]`.
- * @returns The named networks in the order given, or every network when none is named.
+ * @returns The named networks in the order given, or mainnet when none is named.
  * @throws {Error} If a name is not a network.
  */
 export function parseNetworks(names: readonly string[]): readonly MidnightNetwork[] {
+  if (names.length === 0) return [MidnightNetwork.Mainnet];
   const known = Object.values(MidnightNetwork);
-  if (names.length === 0) return known;
   return names.map((name) => {
     const network = known.find((candidate) => candidate === name);
     if (network === undefined) {
