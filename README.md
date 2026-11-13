@@ -21,6 +21,8 @@ live in [docs/repository-overview.md](docs/repository-overview.md).
 - `terraform/modules/mig_template` - COS instance-template helper
 - `terraform/modules/multichain` - older Cloud Run deployment module
 - `key_scripts/generate_keys` - helper for generating bootstrap keys
+- `key_scripts/generate_midnight_wallet` - helper for generating a node's
+  Midnight funding wallet
 - `docs/` - deployment, migration, and repository reference docs
 
 ## Docs Directory
