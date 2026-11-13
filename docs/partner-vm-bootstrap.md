@@ -116,6 +116,42 @@ cd key_scripts/generate_keys
 cargo run
 ```
 
+### Midnight funding wallet
+
+A node that serves Midnight pays the fee of every response from its own
+Midnight wallet. Generate that wallet with the second generator, which needs
+Node.js and npm:
+
+```bash
+cd key_scripts/generate_midnight_wallet
+npm ci
+npm run generate:wallet -- mainnet
+```
+
+Name one or more of `preview`, `preprod` and `mainnet` after the `--`. With
+none named, the addresses of all three are printed. The output is:
+
+- `Seed Words`: a random 24-word BIP-39 mnemonic.
+- `Seed Hex`: the same seed as 128 hex characters. This is the value the node
+  reads as `MPC_MIDNIGHT_FUNDING_SEED`.
+- `Unshielded (NIGHT)`, `Shielded` and `Dust`: the wallet's three addresses on
+  each named network.
+
+The seed is the same on every network: only the address encoding differs.
+Nothing is written to disk and nothing touches a network, so the printed
+secret is the only copy.
+
+Send the chain-signatures team two of the printed addresses, for the network
+the node will serve:
+
+1. `Unshielded (NIGHT)`, which starts `mn_addr`: the address NIGHT funding is
+   sent to.
+2. `Dust`, which starts `mn_dust`: the address a DUST UTXO allocation is made
+   to.
+
+Never send `Seed Words` or `Seed Hex` to anyone: they are the wallet's secret
+and stay with the node operator. The `Shielded` address is not needed.
+
 Treat all generated secret material as production credentials.
 
 ## 5. Reserve The NEAR Account

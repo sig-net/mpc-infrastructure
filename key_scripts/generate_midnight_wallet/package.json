@@ -1,0 +1,23 @@
+{
+  "name": "generate-midnight-wallet",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Generates a Midnight wallet for an MPC node: a random seed in words and hex, and its addresses on each Midnight network.",
+  "scripts": {
+    "generate:wallet": "tsx generate-wallet.ts",
+    "build": "tsc -p tsconfig.json",
+    "test": "tsx --test tests/wallet.test.ts"
+  },
+  "dependencies": {
+    "@midnightntwrk/ledger-v9": "1.0.1",
+    "@midnightntwrk/wallet-sdk-address-format": "4.0.0",
+    "@midnightntwrk/wallet-sdk-hd": "4.0.0",
+    "@scure/bip39": "2.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.1",
+    "tsx": "4.23.12",
+    "typescript": "6.0.3"
+  }
+}
