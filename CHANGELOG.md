@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/sig-net/mpc-infrastructure/compare/1.0.1...1.1.0) (2026-11-13)
+
+
+### Features
+
+* **key-scripts:** generate a node's Midnight funding wallet ([#27](https://github.com/sig-net/mpc-infrastructure/issues/27)) ([34a2099](https://github.com/sig-net/mpc-infrastructure/commit/34a2099a14735926b6aa77f806c9722573010a23))
+
+
+### Bug Fixes
+
+* **terraform:** require signing key secret ([#23](https://github.com/sig-net/mpc-infrastructure/issues/23)) ([cd81b85](https://github.com/sig-net/mpc-infrastructure/commit/cd81b85ad516475a26b8150955ccd51d14ad6449))
+
 ## [1.0.1](https://github.com/sig-net/mpc-infrastructure/compare/1.0.0...1.0.1) (2026-08-19)
 
 
