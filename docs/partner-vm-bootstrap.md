@@ -154,6 +154,16 @@ serve:
 Never send `Seed Words` or `Seed Hex` to anyone: they are the wallet's secret
 and stay with the node operator.
 
+Store `Seed Hex` in Secret Manager as:
+
+```text
+multichain-midnight-funding-seed-mainnet
+```
+
+The signed mainnet release manifest reads that exact secret name. Every
+provider uses the same name in its own GCP project, but each node must generate
+and keep a unique seed value.
+
 Treat all generated secret material as production credentials.
 
 ## 5. Reserve The NEAR Account
@@ -202,6 +212,7 @@ multichain-eth-execution-rpc-url-mainnet
 multichain-sol-account-sk-mainnet-0
 multichain-sol-rpc-ws-url-mainnet
 multichain-sol-rpc-http-url-mainnet
+multichain-midnight-funding-seed-mainnet
 multichain-hydration-rpc-ws-url-mainnet
 multichain-hydration-signer-uri-mainnet
 ```
