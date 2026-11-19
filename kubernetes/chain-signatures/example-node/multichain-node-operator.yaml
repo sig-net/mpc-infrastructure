@@ -27,6 +27,8 @@ spec:
             - name: operator-bootstrap
               mountPath: /config
               readOnly: true
+            - name: operator-state
+              mountPath: /var/lib/chain-signatures/state
       volumes:
         - name: operator-bootstrap
           secret:
@@ -34,3 +36,6 @@ spec:
             items:
               - key: bootstrap.env
                 path: bootstrap.env
+        - name: operator-state
+          persistentVolumeClaim:
+            claimName: multichain-node-operator-state
