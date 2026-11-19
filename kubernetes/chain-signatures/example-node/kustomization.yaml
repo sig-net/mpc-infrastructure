@@ -9,4 +9,5 @@ resources:
   - multichain-node-deployment.yaml
   - multichain-node-service.yaml
   - multichain-node-operator-rbac.yaml
+  - multichain-node-operator-state.yaml
   - multichain-node-operator.yaml

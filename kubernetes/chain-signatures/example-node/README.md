@@ -16,6 +16,7 @@ settings.
 - `multichain-node` application deployment
 - `multichain-node` load balancer service
 - `multichain-node-operator` deployment
+- persistent operator release state
 - operator RBAC
 - Redis master
 - Redis replica
@@ -40,3 +41,25 @@ Two example ESO manifests are included but not referenced by
 - `multichain-node-operator-bootstrap.externalsecret.example.yaml`
 
 If you do not use ESO, please make sure you use a secure secret management solution for kubernetes, kubernetes secrets alone are not sufficent.
+
+## Operator State
+
+The operator records the last applied release in
+`/var/lib/chain-signatures/state/agent-state.json`. Keep that path on
+persistent storage so a pod restart does not discard its release history. The
+example mounts a 1 GiB `ReadWriteOnce` claim at
+`/var/lib/chain-signatures/state`.
+
+## GitOps Field Ownership
+
+The release operator updates the node workload's container image, full
+environment list, and these pod-template annotations:
+
+- `chain-signatures.sig.network/revision`
+- `chain-signatures.sig.network/managed-env-hash`
+- `chain-signatures.sig.network/manifest-sha256`
+
+If another controller also reconciles the node workload, configure it to
+ignore those fields. Otherwise it can restore the values stored in Git after
+the release operator applies a signed release. Continue reconciling the rest
+of the workload, including resources, probes, scheduling, services, and RBAC.
